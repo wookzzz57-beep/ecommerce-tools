@@ -1,12 +1,15 @@
 from pathlib import Path
 
+from check_project_state import load_project_state, validate_project_state
+
 
 REQUIRED = [
-    "README.md","LICENSE","AGENTS.md","pyproject.toml",
+    "README.md","LICENSE","AGENTS.md","PROJECT_STATE.json","pyproject.toml",
+    "docs/EXECUTION_CONTROL.md",
     "src/firstwindow/cli.py","src/firstwindow/gui.py","src/firstwindow/router.py",
     "src/firstwindow/durable.py","src/firstwindow/runners.py","src/firstwindow/bootstrap.py",
     "src/firstwindow/system_status.py","src/firstwindow/onboarding.py","src/firstwindow/demo_project.py","src/firstwindow/windows_paths.py",
-    "scripts/firstwindow_gui.py","site/index.html","site/app.js","site/styles.css",
+    "scripts/check_project_state.py","scripts/firstwindow_gui.py","site/index.html","site/app.js","site/styles.css",
     ".github/workflows/ci.yml",".github/workflows/windows-build.yml",
 ]
 
@@ -17,7 +20,14 @@ def main() -> int:
         print("missing required files:")
         print("\n".join(f"- {path}" for path in missing))
         return 1
-    print(f"validated {len(REQUIRED)} required files")
+
+    failures = validate_project_state(load_project_state())
+    if failures:
+        print("project state validation failed:")
+        print("\n".join(f"- {item}" for item in failures))
+        return 1
+
+    print(f"validated {len(REQUIRED)} required files and project control state")
     return 0
 
 

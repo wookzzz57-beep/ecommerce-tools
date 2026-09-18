@@ -1,6 +1,6 @@
 # FirstWindow v0.2 Beginner Implementation Plan
 
-> **For agentic workers:** execute changes with evidence gates; do not merge before Linux CI, Windows packaging, and PR checks pass.
+> **Archived release plan.** v0.2.0 shipped successfully. This file is retained as historical evidence; current work is governed by `PROJECT_STATE.json`.
 
 **Goal:** Make FirstWindow usable as a beginner-facing Windows preview without weakening the v0.1 free-cost and durable-state guarantees.
 
@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-18-firstwindow-v0.2-design.md`
 
-## Tasks
+## Acceptance record
 
 - [x] RED: define setup, onboarding, demo, managed-local behavior with failing tests.
 - [x] GREEN: implement beginner setup and managed-local detection.
@@ -19,9 +19,11 @@
 - [x] Build beginner GUI over tested core.
 - [x] Add Windows one-file packaging + packaged self-test.
 - [x] Add beginner docs and update CI actions.
-- [ ] Linux CI passes on final branch head.
-- [ ] Windows App workflow passes on PR.
-- [ ] PR acceptance/review passes.
-- [ ] Merge to main.
-- [ ] Main Windows build publishes v0.2.0 binary.
-- [ ] Redeploy/verify public website.
+- [x] Linux CI passes on final branch head.
+- [x] Windows App workflow passes before merge.
+- [x] PR acceptance/review passes.
+- [x] Merge to main.
+- [x] Main Windows build publishes v0.2.0 binary.
+- [ ] Public website read-back verification — deployment was created, but Vercel OAuth scope blocks authoritative read-back. Tracked as an external blocker in `PROJECT_STATE.json`.
+
+Release asset and release-note read-back were verified on GitHub after publication.
