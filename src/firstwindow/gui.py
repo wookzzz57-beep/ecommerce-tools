@@ -252,7 +252,7 @@ def main() -> int:
                 return
 
             task_id = f"fw-{uuid.uuid4().hex[:10]}"
-            create_task(project, task_id, task, ["Agent exits successfully and reports verification evidence."])
+            create_task(project, task_id, task, ["Agent process exits successfully."])
             write_checkpoint(project, task_id, "dispatching", f"Run with {lane.name}.")
 
             if lane.engine == "agnes":
