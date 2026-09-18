@@ -1,11 +1,7 @@
-import os
 import unittest
 
-from firstwindow.bootstrap import (
-    install_command,
-    runtime_path_candidates,
-    setup_actions,
-)
+from firstwindow.bootstrap import install_command, setup_actions
+from firstwindow.windows_paths import runtime_path_candidates
 
 
 class BootstrapTests(unittest.TestCase):
