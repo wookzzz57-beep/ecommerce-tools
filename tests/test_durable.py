@@ -1,7 +1,9 @@
 from pathlib import Path
 import tempfile
 import unittest
+
 from firstwindow.durable import append_evidence, create_task, task_dir, verify_task
+
 
 class DurableTests(unittest.TestCase):
     def test_task_requires_evidence_before_verify(self):
@@ -11,7 +13,15 @@ class DurableTests(unittest.TestCase):
             ok, failures = verify_task(project, "demo-1")
             self.assertFalse(ok)
             self.assertIn("evidence ledger empty", failures)
-            append_evidence(project, "demo-1", "test", True, "unit tests pass")
+
+            append_evidence(
+                project,
+                "demo-1",
+                "test",
+                True,
+                "unit tests pass",
+                criteria=["AC-001"],
+            )
             ok, failures = verify_task(project, "demo-1")
             self.assertTrue(ok)
             self.assertEqual(failures, [])
@@ -20,6 +30,7 @@ class DurableTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(ValueError):
                 task_dir(Path(tmp), "../escape")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -78,7 +78,8 @@ CLI helpers:
 firstwindow setup
 firstwindow setup --install hermes --yes
 firstwindow demo
-firstwindow run "Add a /health endpoint and test it"
+firstwindow run "Add a /health endpoint and test it" --accept "tests pass" --accept "GET /health returns 200"
+firstwindow evidence <task_id> --criterion AC-001 --kind test --detail "tests passed"
 firstwindow verify <task_id>
 ```
 
@@ -92,6 +93,10 @@ Each task lives under:
 ├── checkpoint.json
 └── evidence.jsonl
 ```
+
+New tasks use stable acceptance IDs and criterion-level evidence coverage. Existing v0.1/v0.2 state remains readable without automatic rewriting.
+
+See [Durable State Contract](docs/DURABLE_STATE.md) for schema compatibility and verification semantics.
 
 Chat output is working context. Durable repository state is the recovery source.
 
@@ -150,7 +155,6 @@ Windows CI additionally:
 
 ## Roadmap
 
-- criterion-to-evidence mapping
 - resume button for interrupted tasks
 - richer progress stream
 - signed Windows binaries

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — v0.3
+
+- Added task schema v2 with stable acceptance criterion IDs.
+- Added criterion-linked evidence and deterministic covered/uncovered/failed reporting.
+- Added latest-ledger-result semantics so a later failure invalidates an earlier pass.
+- Added fail-closed handling for malformed/unknown criterion references and future task schemas.
+- Preserved legacy v1 task verification without automatically rewriting existing task directories.
+- Added CLI evidence recording for explicit criterion IDs.
+- Added canonical project-state and anti-drift gates for long-running development.
+
 ## 0.2.0 — Beginner Preview
 
 - Added beginner desktop GUI.
