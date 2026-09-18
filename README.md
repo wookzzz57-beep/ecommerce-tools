@@ -6,6 +6,15 @@ FirstWindow is a beginner-first launcher over **Agnes Code + Hermes Agent**. It 
 
 [Download Windows](../../releases/latest/download/FirstWindow-Windows-x64.exe) · [Beginner Guide](docs/BEGINNER.md)
 
+
+## Real Windows demo
+
+This is a real capture of the current Windows package built from `main` — not a mockup or generated UI.
+
+![FirstWindow startup demo](docs/assets/firstwindow-startup.gif)
+
+[Open the full-size real app screenshot](docs/assets/firstwindow-window.png)
+
 ## The problem
 
 Coding agents are powerful, but the first experience is fragmented:
