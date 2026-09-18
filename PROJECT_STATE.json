@@ -1,41 +1,49 @@
 {
   "schema_version": 1,
   "project": "FirstWindow",
-  "phase": "v0.3-launch-readiness-and-reliability",
+  "phase": "v0.3-reliability",
   "status": "active",
   "canonical_branch": "main",
   "current_release": "v0.2.0",
-  "primary_objective": "Prove beginner usability and strengthen verified completion and recovery without turning FirstWindow into a third coding-agent runtime.",
-  "active_engineering_issue": 4,
+  "primary_objective": "Strengthen verified completion and durable recovery while preserving the beginner-first $0 experience and keeping Agnes/Hermes as execution engines.",
+  "active_engineering_issue": 5,
   "engineering_queue": [
-    4,
     5
+  ],
+  "completed_engineering_issues": [
+    4
   ],
   "launch_track": [
     6
   ],
+  "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Issue #4 implementation is complete on branch v0.3-criterion-evidence. After merge and post-merge verification, close #4, transition PROJECT_STATE so issue #5 becomes the sole active engineering issue, then start #5 on an isolated branch. Do not implement #5 before that state transition.",
-  "last_verified_main_sha": "622037a1a4cbad1642f31ec924a4d65a9351882d",
+  "resume_point": "Issue #4 criterion-to-evidence verification is merged and verified on main. Issue #5 Durable Resume is now the sole active engineering task. Start #5 from current main on an isolated branch, TDD-first. Do not implement #6 distribution code until #5 is merged and PROJECT_STATE is transitioned.",
+  "last_verified_main_sha": "f3f54e0107c35523e6db880f4e26e5a84665d287",
   "external_blockers": [
-    "Repository is still named ecommerce-tools and still has placeholder metadata; rename/description/topics require a repository-settings action outside the current connector.",
-    "Vercel production deployment was created, but read-back verification is blocked by the progress00116 OAuth scope."
+    "Vercel scope was re-authorized by the user, but the current Vercel connector still returns 403 when reading the progress00116 project; treat website read-back verification as externally blocked until the connector can read it."
+  ],
+  "metadata_notes": [
+    "Canonical repository is wookzzz57-beep/first-window.",
+    "Repository description is updated.",
+    "User reports discovery topics were added; GitHub REST read-back currently returns an empty topics array, so re-check before launch promotion."
   ],
   "release_gates": [
     "repository validation passes",
     "Python compilation passes",
-    "unit tests pass",
-    "Windows package build passes for distribution changes",
-    "packaged self-test passes for distribution changes",
-    "acceptance evidence is recorded before merge",
-    "PROJECT_STATE.json resume_point is updated before handoff"
+    "full unit tests pass",
+    "focused resume tests pass",
+    "Windows package build and packaged self-test pass for GUI/distribution-affecting changes",
+    "criterion-level acceptance evidence remains enforced",
+    "PROJECT_STATE.json resume_point is truthful before handoff"
   ],
   "invariants": [
     "$0 Mode never silently falls back to unknown-cost providers",
-    "Agnes and Hermes remain execution engines; FirstWindow is onboarding, routing, durable state, and verification",
+    "Agnes and Hermes remain execution engines; FirstWindow owns onboarding, routing, durable state, recovery, and deterministic acceptance",
     "worker output is not final acceptance evidence",
     "credentials are never stored in FirstWindow task state",
     "shutdown, restart, sleep, and power actions are out of scope",
-    "one primary engineering issue per implementation branch"
+    "one primary engineering issue per implementation branch",
+    "verified-complete tasks must not be resumed automatically"
   ]
 }
