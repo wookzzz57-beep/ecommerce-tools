@@ -7,11 +7,16 @@
   "current_release": "v0.2.0",
   "primary_objective": "Prove beginner usability and strengthen verified completion and recovery without turning FirstWindow into a third coding-agent runtime.",
   "active_engineering_issue": 4,
-  "engineering_queue": [4, 5],
-  "launch_track": [6],
+  "engineering_queue": [
+    4,
+    5
+  ],
+  "launch_track": [
+    6
+  ],
   "wip_limit": 1,
-  "resume_point": "Start issue #4 on an isolated branch. Add criterion IDs and criterion-to-evidence coverage with backward compatibility. Do not start issue #5 implementation until #4 verification semantics are merged.",
-  "last_verified_main_sha": "32ed01850cfa5cd0ddb57efc779879d3fec0638c",
+  "resume_point": "Issue #4 implementation active on branch v0.3-criterion-evidence. RED tests define schema v2 criterion IDs, coverage, latest-result failure semantics, unknown-reference failure, v1 compatibility, and future-schema fail-closed behavior.",
+  "last_verified_main_sha": "622037a1a4cbad1642f31ec924a4d65a9351882d",
   "external_blockers": [
     "Repository is still named ecommerce-tools and still has placeholder metadata; rename/description/topics require a repository-settings action outside the current connector.",
     "Vercel production deployment was created, but read-back verification is blocked by the progress00116 OAuth scope."
