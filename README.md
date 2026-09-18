@@ -117,11 +117,23 @@ A managed `llamacpp` Local Model is treated as a local lane. FirstWindow does no
 - worker output is not acceptance evidence
 - no shutdown, restart, sleep, or power operations
 
+## Contributor control plane
+
+Substantial work starts from:
+
+1. `AGENTS.md` — hard project boundaries.
+2. `PROJECT_STATE.json` — current phase, active issue, queue, blockers, and resume point.
+3. `docs/EXECUTION_CONTROL.md` — preflight, long-task, anti-drift, and acceptance gates.
+4. the active GitHub issue — implementation scope and acceptance criteria.
+
+One primary engineering issue is allowed per implementation branch.
+
 ## Verification
 
 Linux CI runs:
 
 ```bash
+python scripts/check_project_state.py
 python scripts/validate.py
 python -m compileall -q src scripts tests
 PYTHONPATH=src python -m unittest discover -s tests -v
@@ -134,7 +146,7 @@ Windows CI additionally:
 - launches the packaged EXE in `--self-test` mode
 - prints SHA-256
 - uploads the binary artifact
-- publishes the first `v0.2.0` release after a successful main build
+- publishes or refreshes the `v0.2.0` release
 
 ## Roadmap
 
