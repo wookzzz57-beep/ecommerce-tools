@@ -62,6 +62,24 @@ class EvidenceCoverageTests(unittest.TestCase):
             self.assertFalse(report["ok"])
             self.assertTrue(any("unknown criterion reference: AC-999" in item for item in report["failures"]))
 
+    def test_malformed_criterion_reference_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            root = create_task(project, "malformed", "keep tests green", ["tests pass"])
+            (root / "evidence.jsonl").write_text(
+                json.dumps({
+                    "timestamp": "x",
+                    "kind": "test",
+                    "passed": True,
+                    "detail": "bad criteria shape",
+                    "criteria": "AC-001",
+                }) + "\n",
+                encoding="utf-8",
+            )
+            report = verification_report(project, "malformed")
+            self.assertFalse(report["ok"])
+            self.assertTrue(any("criteria must be a list" in item for item in report["failures"]))
+
     def test_v1_task_keeps_legacy_verification_behavior(self):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp)

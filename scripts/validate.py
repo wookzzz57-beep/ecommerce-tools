@@ -5,7 +5,7 @@ from check_project_state import load_project_state, validate_project_state
 
 REQUIRED = [
     "README.md","LICENSE","AGENTS.md","PROJECT_STATE.json","pyproject.toml",
-    "docs/EXECUTION_CONTROL.md",
+    "docs/EXECUTION_CONTROL.md","docs/DURABLE_STATE.md",
     "src/firstwindow/cli.py","src/firstwindow/gui.py","src/firstwindow/router.py",
     "src/firstwindow/durable.py","src/firstwindow/runners.py","src/firstwindow/bootstrap.py",
     "src/firstwindow/system_status.py","src/firstwindow/onboarding.py","src/firstwindow/demo_project.py","src/firstwindow/windows_paths.py",
