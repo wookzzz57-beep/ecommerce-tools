@@ -16,6 +16,7 @@ from .onboarding import BeginnerState, recommend_next_action
 from .router import choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command
 from .system_status import hermes_local_ready, read_hermes_model
+from .windows_paths import refresh_runtime_paths
 
 
 def main() -> int:
@@ -189,6 +190,10 @@ def main() -> int:
                 self.events.put(("log", f"Installing {target}…"))
                 try:
                     code = subprocess.run(command, check=False, creationflags=self._creation_flags()).returncode
+                    if code == 0:
+                        added = refresh_runtime_paths(platform.system(), target)
+                        if added:
+                            self.events.put(("log", "Refreshed runtime PATH for this FirstWindow session."))
                     self.events.put(("log", f"{target} installer exited with code {code}."))
                 except Exception as exc:
                     self.events.put(("log", f"{target} installer failed: {exc}"))
