@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "project": "FirstWindow",
+  "phase": "v0.3-launch-readiness-and-reliability",
+  "status": "active",
+  "canonical_branch": "main",
+  "current_release": "v0.2.0",
+  "primary_objective": "Prove beginner usability and strengthen verified completion and recovery without turning FirstWindow into a third coding-agent runtime.",
+  "active_engineering_issue": 4,
+  "engineering_queue": [4, 5],
+  "launch_track": [6],
+  "wip_limit": 1,
+  "resume_point": "Start issue #4 on an isolated branch. Add criterion IDs and criterion-to-evidence coverage with backward compatibility. Do not start issue #5 implementation until #4 verification semantics are merged.",
+  "last_verified_main_sha": "32ed01850cfa5cd0ddb57efc779879d3fec0638c",
+  "external_blockers": [
+    "Repository is still named ecommerce-tools and still has placeholder metadata; rename/description/topics require a repository-settings action outside the current connector.",
+    "Vercel production deployment was created, but read-back verification is blocked by the progress00116 OAuth scope."
+  ],
+  "release_gates": [
+    "repository validation passes",
+    "Python compilation passes",
+    "unit tests pass",
+    "Windows package build passes for distribution changes",
+    "packaged self-test passes for distribution changes",
+    "acceptance evidence is recorded before merge",
+    "PROJECT_STATE.json resume_point is updated before handoff"
+  ],
+  "invariants": [
+    "$0 Mode never silently falls back to unknown-cost providers",
+    "Agnes and Hermes remain execution engines; FirstWindow is onboarding, routing, durable state, and verification",
+    "worker output is not final acceptance evidence",
+    "credentials are never stored in FirstWindow task state",
+    "shutdown, restart, sleep, and power actions are out of scope",
+    "one primary engineering issue per implementation branch"
+  ]
+}
