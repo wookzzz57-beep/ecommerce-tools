@@ -1,26 +1,23 @@
 {
   "schema_version": 1,
   "project": "FirstWindow",
-  "phase": "v0.3-release-ready",
-  "status": "active",
+  "phase": "v0.3-released",
+  "status": "released",
   "canonical_branch": "main",
-  "current_release": "v0.2.0",
-  "primary_objective": "Close the v0.3 launch evidence loop: merge real Windows UI proof, establish a verifiable Vercel production deployment, create the v0.3.0 tag only after release gates pass, then verify real Release assets.",
-  "active_engineering_issue": 6,
-  "engineering_queue": [
-    6
-  ],
+  "current_release": "v0.3.0",
+  "primary_objective": "FirstWindow v0.3.0 is released and publicly verifiable. Preserve the release baseline; future work must start from a new scoped issue rather than mutating the completed v0.3 launch track.",
+  "active_engineering_issue": null,
+  "engineering_queue": [],
   "completed_engineering_issues": [
     4,
-    5
-  ],
-  "launch_track": [
+    5,
     6
   ],
+  "launch_track": [],
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Vercel authorization and public website verification are complete. OAuth succeeded for user wookzzz57-2656; Team progress00116 is visible. Deployment dpl_C32ZySBhbfh5uCR3pwBy8f8skupm (firstwindow-public) is Production/Ready. Public alias https://firstwindow-public.vercel.app passed anonymous black-box verification via DoH-correct Vercel IPs: HTTP 200, expected title/copy, canonical repo link present, legacy ecommerce-tools absent, no Vercel Login. PR #14 is merged to main at ab26a0e31402faca76f5f308d1f6705f8467d7b4. Main Linux run 35365230982 passed; Windows run 35365230993 is the current final post-merge packaging gate. Next: wait for Windows PASS, then create v0.3.0 tag using an authenticated Git client/UI, verify tag-triggered Release contains EXE + SHA256SUMS.txt and becomes Latest, then close #6.",
-  "last_verified_main_sha": "ab26a0e31402faca76f5f308d1f6705f8467d7b4",
+  "resume_point": "FirstWindow v0.3.0 release is complete. Tag v0.3.0 points to 041a5b0efab0b3346895639f933104f19de55564. Tag CI 35365434160 PASS; Windows Release run 35365434006 PASS; Release 391602365 is published and Latest with FirstWindow-Windows-x64.exe and SHA256SUMS.txt. Vercel production firstwindow-public is Ready and https://firstwindow-public.vercel.app passed anonymous HTTP 200 verification via DoH-correct Vercel IPs with expected copy, canonical repo link, no legacy repo reference, and no Vercel Login redirect. Real Windows screenshot/GIF are merged. Next work must open/select a new issue and transition PROJECT_STATE before implementation.",
+  "last_verified_main_sha": "041a5b0efab0b3346895639f933104f19de55564",
   "evidence": {
     "main_linux_ci_run": 35360016689,
     "main_linux_ci": "success",
@@ -54,16 +51,30 @@
     "site_canonical_merge_sha": "ab26a0e31402faca76f5f308d1f6705f8467d7b4",
     "site_main_linux_run": 35365230982,
     "site_main_linux": "success",
-    "site_main_windows_run": 35365230993
+    "site_main_windows_run": 35365230993,
+    "release_tag": "v0.3.0",
+    "release_id": 391602365,
+    "release_url": "https://github.com/wookzzz57-beep/first-window/releases/tag/v0.3.0",
+    "release_latest": true,
+    "tag_ci_run": 35365434160,
+    "tag_ci": "success",
+    "tag_windows_run": 35365434006,
+    "tag_windows": "success",
+    "release_exe_asset_id": 572951817,
+    "release_exe_size": 11591519,
+    "release_exe_digest": "sha256:9b84edab66cdde0740223956203ec15a5393535e49ff32f3e960d74292b002f8",
+    "release_checksum_asset_id": 572951818,
+    "release_checksum_size": 95,
+    "release_checksum_digest": "sha256:c553622cf7423cdc7a1372b2a13ac8d70a8fef0bf16f918bcf3c7c0728c7bad8"
   },
-  "external_blockers": [
-    "GitHub connector does not expose a tag/ref creation write tool; after final main Windows PASS, create v0.3.0 using an authenticated Git client or GitHub UI if no writable tag interface becomes available."
-  ],
+  "external_blockers": [],
   "metadata_notes": [
     "Canonical repository is wookzzz57-beep/first-window.",
     "Repository description is updated.",
-    "GitHub REST still reports topics: []; verify discovery topics again before promotion.",
-    "Real UI assets are actual captures from the GitHub Actions-built main EXE on 260610pc1, not generated mockups."
+    "Real UI assets are actual captures from the GitHub Actions-built main EXE on 260610pc1, not generated mockups.",
+    "v0.3.0 is the verified released baseline.",
+    "Public production URL: https://firstwindow-public.vercel.app",
+    "Real UI assets are actual captures from the GitHub Actions-built Windows EXE, not generated mockups."
   ],
   "release_gates": [
     "repository validation passes",
