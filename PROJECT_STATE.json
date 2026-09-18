@@ -19,8 +19,8 @@
   ],
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Main v0.3 candidate is verified at 7aecc5ca2d45416e371a40724a91f7b9203cfd4d. Linux CI 35360016689 PASS; Windows run 35360016687 PASS; artifact 10553463139. Real-device EXE hash matched SHA256SUMS and self-test exited 0 on 260610pc1. Real PNG/GIF were captured and committed on launch-evidence at f9edb365b1f49cc9c17e12aa07597f351affdfec. Issue #6 was reopened because Release/Vercel gates are not complete. Vercel plugin is installed but returns teams: []; Vercel CLI login is waiting for user authorization. Next: complete Vercel login, deploy/verify production URL, merge launch-evidence, create v0.3.0 tag, verify tag release assets, then close #6.",
-  "last_verified_main_sha": "7aecc5ca2d45416e371a40724a91f7b9203cfd4d",
+  "resume_point": "Vercel authorization and public website verification are complete. OAuth succeeded for user wookzzz57-2656; Team progress00116 is visible. Deployment dpl_C32ZySBhbfh5uCR3pwBy8f8skupm (firstwindow-public) is Production/Ready. Public alias https://firstwindow-public.vercel.app passed anonymous black-box verification via DoH-correct Vercel IPs: HTTP 200, expected title/copy, canonical repo link present, legacy ecommerce-tools absent, no Vercel Login. PR #14 is merged to main at ab26a0e31402faca76f5f308d1f6705f8467d7b4. Main Linux run 35365230982 passed; Windows run 35365230993 is the current final post-merge packaging gate. Next: wait for Windows PASS, then create v0.3.0 tag using an authenticated Git client/UI, verify tag-triggered Release contains EXE + SHA256SUMS.txt and becomes Latest, then close #6.",
+  "last_verified_main_sha": "ab26a0e31402faca76f5f308d1f6705f8467d7b4",
   "evidence": {
     "main_linux_ci_run": 35360016689,
     "main_linux_ci": "success",
@@ -38,11 +38,26 @@
     "vercel_plugin_installed": true,
     "vercel_plugin_visible_teams": [],
     "vercel_cli_version": "59.23.1",
-    "vercel_cli_auth": "waiting_for_user_authorization"
+    "vercel_cli_auth": "authenticated",
+    "vercel_user": "wookzzz57-2656",
+    "vercel_team": "progress00116",
+    "vercel_project": "firstwindow-public",
+    "vercel_deployment_id": "dpl_C32ZySBhbfh5uCR3pwBy8f8skupm",
+    "vercel_deployment_status": "ready",
+    "vercel_production_url": "https://firstwindow-public.vercel.app",
+    "vercel_http_status": 200,
+    "vercel_copy_check": "pass",
+    "vercel_repo_check": "pass",
+    "vercel_legacy_repo_check": "clear",
+    "vercel_login_redirect_check": "clear",
+    "vercel_verification_note": "System/UDP DNS on the Windows device returned incorrect addresses; verification used DNS-over-HTTPS answers and curl --resolve while preserving Host/SNI.",
+    "site_canonical_merge_sha": "ab26a0e31402faca76f5f308d1f6705f8467d7b4",
+    "site_main_linux_run": 35365230982,
+    "site_main_linux": "success",
+    "site_main_windows_run": 35365230993
   },
   "external_blockers": [
-    "Vercel CLI login requires one user authorization in the browser. Until that succeeds, production URL deployment/read-back remains blocked.",
-    "GitHub connector does not expose a tag/ref creation write tool; after all main/release gates pass, create v0.3.0 using an authenticated Git client or GitHub UI if no writable tag interface becomes available."
+    "GitHub connector does not expose a tag/ref creation write tool; after final main Windows PASS, create v0.3.0 using an authenticated Git client or GitHub UI if no writable tag interface becomes available."
   ],
   "metadata_notes": [
     "Canonical repository is wookzzz57-beep/first-window.",
@@ -70,7 +85,5 @@
     "shutdown, restart, sleep, and power actions are out of scope",
     "one primary engineering issue per implementation branch",
     "verified-complete tasks must not be resumed automatically"
-  ],
-  "active_branch": "launch-evidence",
-  "active_head": "f9edb365b1f49cc9c17e12aa07597f351affdfec"
+  ]
 }
