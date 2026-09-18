@@ -1,23 +1,34 @@
 {
   "schema_version": 1,
   "project": "FirstWindow",
-  "phase": "v0.3-released",
-  "status": "released",
+  "phase": "v0.3-post-release-launch",
+  "status": "post-release",
   "canonical_branch": "main",
   "current_release": "v0.3.0",
-  "primary_objective": "FirstWindow v0.3.0 is released and publicly verifiable. Preserve the release baseline; future work must start from a new scoped issue rather than mutating the completed v0.3 launch track.",
+  "primary_objective": "Preserve the verified v0.3.0 product baseline while running one evidence-driven launch/feedback experiment at a time. Use real adoption evidence to identify the dominant beginner funnel blocker; do not reopen engineering scope without a separately promoted issue.",
   "active_engineering_issue": null,
   "engineering_queue": [],
   "completed_engineering_issues": [
     4,
     5,
-    6
+    6,
+    16
   ],
-  "launch_track": [],
+  "launch_track": [
+    17
+  ],
+  "launch_control": {
+    "active_issue": 17,
+    "experiment_wip_limit": 1,
+    "product_baseline_frozen": true,
+    "baseline_stars": 1,
+    "target_stars": 10,
+    "success_alternative": "enough real-user evidence to identify the dominant blocking funnel step"
+  },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "FirstWindow v0.3.0 is fully released and verified. Release v0.3.0 (id 391602365) contains FirstWindow-Windows-x64.exe and SHA256SUMS.txt. Final release-state merge c781364c85505332722530c9836c1d7f083d0466 passed main CI 35366146003 and Windows App 35366146006. Final Vercel deployment dpl_AoBn3KDXFfPRYNavRmXD2gLcUSTM is Production/Ready at https://firstwindow-public.vercel.app and anonymous black-box verification returned HTTP 200 with v0.3.0 text, working latest-download link, canonical repo, no legacy repo, and no Vercel Login redirect. v0.3 launch track is closed. Any new implementation must first select/open a new issue and transition PROJECT_STATE out of released state.",
-  "last_verified_main_sha": "c781364c85505332722530c9836c1d7f083d0466",
+  "resume_point": "Post-release Launch v1 is active under issue #17. FirstWindow v0.3.0 remains the frozen verified product baseline. Public launch review observed 1 GitHub star, a reachable anonymous production site, and a Latest v0.3.0 Release. Engineering WIP is zero. Next action: run exactly one bounded distribution experiment from #17, record its hypothesis/channel/artifact/evidence/decision, and do not change product scope unless feedback passes the promotion gate in docs/LAUNCH_CONTROL.md. If a P0/P1 security, cost, download, startup, or integrity regression appears, pause launch work and promote one scoped engineering issue.",
+  "last_verified_main_sha": "c3dea360d2ffecb20d3426efa76e3ddee146aef8",
   "evidence": {
     "main_linux_ci_run": 35360016689,
     "main_linux_ci": "success",
@@ -79,16 +90,22 @@
     "final_vercel_download_check": "pass",
     "final_vercel_repo_check": "pass",
     "final_vercel_legacy_repo_check": "clear",
-    "final_vercel_login_redirect_check": "clear"
+    "final_vercel_login_redirect_check": "clear",
+    "final_release_bookkeeping_commit": "c3dea360d2ffecb20d3426efa76e3ddee146aef8",
+    "post_release_control_issue": 16,
+    "launch_v1_issue": 17,
+    "launch_review_baseline_stars": 1,
+    "launch_review_public_site": "pass",
+    "launch_review_latest_release": "pass"
   },
   "external_blockers": [],
   "metadata_notes": [
     "Canonical repository is wookzzz57-beep/first-window.",
     "Repository description is updated.",
-    "Real UI assets are actual captures from the GitHub Actions-built main EXE on 260610pc1, not generated mockups.",
-    "v0.3.0 is the verified released baseline.",
+    "Real UI assets are actual captures from the GitHub Actions-built Windows EXE, not generated mockups.",
+    "v0.3.0 is the verified released baseline and remains frozen during post-release experiments.",
     "Public production URL: https://firstwindow-public.vercel.app",
-    "Real UI assets are actual captures from the GitHub Actions-built Windows EXE, not generated mockups."
+    "Post-release launch evidence informs issue promotion; it does not directly mutate product scope."
   ],
   "release_gates": [
     "repository validation passes",
@@ -109,6 +126,10 @@
     "credentials are never stored in FirstWindow task state",
     "shutdown, restart, sleep, and power actions are out of scope",
     "one primary engineering issue per implementation branch",
-    "verified-complete tasks must not be resumed automatically"
+    "verified-complete tasks must not be resumed automatically",
+    "post-release engineering WIP remains zero until evidence is promoted through a scoped issue",
+    "only one materially distinct launch experiment is active at a time",
+    "stars, visits, downloads, and comments are signals rather than proof of product quality",
+    "fake engagement, spam, fabricated evidence, and deceptive launch claims are prohibited"
   ]
 }
