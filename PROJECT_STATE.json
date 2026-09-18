@@ -23,11 +23,21 @@
     "product_baseline_frozen": true,
     "baseline_stars": 1,
     "target_stars": 10,
-    "success_alternative": "enough real-user evidence to identify the dominant blocking funnel step"
+    "success_alternative": "enough real-user evidence to identify the dominant blocking funnel step",
+    "active_experiment": {
+      "id": "EXP-001",
+      "issue": 17,
+      "channel": "Hacker News / Show HN",
+      "status": "ready",
+      "published_url": null,
+      "product_baseline_frozen": true,
+      "engineering_wip": 0,
+      "next_action": "Publish the single prepared Show HN experiment when the operator can remain available for discussion, then record the HN item URL and publication time in issue #17 before any other channel."
+    }
   },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Post-release Launch v1 is active under issue #17. FirstWindow v0.3.0 remains the frozen verified product baseline. Public launch review observed 1 GitHub star, a reachable anonymous production site, and a Latest v0.3.0 Release. Engineering WIP is zero. Next action: run exactly one bounded distribution experiment from #17, record its hypothesis/channel/artifact/evidence/decision, and do not change product scope unless feedback passes the promotion gate in docs/LAUNCH_CONTROL.md. If a P0/P1 security, cost, download, startup, or integrity regression appears, pause launch work and promote one scoped engineering issue.",
+  "resume_point": "Launch v1 is active under issue #17. EXP-001 (Hacker News / Show HN) is READY and not yet published. v0.3.0 remains frozen and engineering WIP is zero. PR #18 was verified on its head by CI 35367825059 and Windows App 35367825229 before squash merge fee12394551e7212415f045321149699cd93c52e. The current GitHub connector has not independently exposed a post-merge main workflow run, so last_verified_main_sha remains the earlier verified main baseline rather than being guessed forward. Next action: publish only EXP-001 when the operator can remain available for discussion; immediately append the HN item URL and publication time to issue #17, collect evidence, and start no second channel until a decision is recorded.",
   "last_verified_main_sha": "c3dea360d2ffecb20d3426efa76e3ddee146aef8",
   "evidence": {
     "main_linux_ci_run": 35360016689,
@@ -96,7 +106,20 @@
     "launch_v1_issue": 17,
     "launch_review_baseline_stars": 1,
     "launch_review_public_site": "pass",
-    "launch_review_latest_release": "pass"
+    "launch_review_latest_release": "pass",
+    "post_release_control_merge_sha": "fee12394551e7212415f045321149699cd93c52e",
+    "post_release_pr_ci_run": 35367825059,
+    "post_release_pr_ci": "success",
+    "post_release_pr_windows_run": 35367825229,
+    "post_release_pr_windows": "success",
+    "post_merge_main_ci_observed": false,
+    "post_merge_main_ci_note": "GitHub connector workflow lookup currently exposes pull-request-triggered runs, not an independently verified main-push run for the squash merge. Do not advance last_verified_main_sha from inference.",
+    "launch_exp_001": {
+      "issue": 17,
+      "channel": "Hacker News / Show HN",
+      "status": "ready",
+      "issue_comment_id": 5733366528
+    }
   },
   "external_blockers": [],
   "metadata_notes": [
