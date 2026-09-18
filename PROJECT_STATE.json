@@ -7,6 +7,8 @@
   "current_release": "v0.2.0",
   "primary_objective": "Strengthen verified completion and durable recovery while preserving the beginner-first $0 experience and keeping Agnes/Hermes as execution engines.",
   "active_engineering_issue": 5,
+  "active_branch": "v0.3-durable-resume",
+  "active_head": "b3a9acd4c121df9c244491761e80e911a31ed522",
   "engineering_queue": [
     5
   ],
@@ -18,8 +20,17 @@
   ],
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Issue #4 criterion-to-evidence verification is merged and verified on main. Issue #5 Durable Resume is now the sole active engineering task. Start #5 from current main on an isolated branch, TDD-first. Do not implement #6 distribution code until #5 is merged and PROJECT_STATE is transitioned.",
-  "last_verified_main_sha": "f3f54e0107c35523e6db880f4e26e5a84665d287",
+  "resume_point": "Issue #5 implementation is complete on branch v0.3-durable-resume. Linux CI and Windows packaging/self-test passed for head b3a9acd4c121df9c244491761e80e911a31ed522. Next: review diff, open PR to main, merge only if PR checks stay green, then verify main, close #5, and transition PROJECT_STATE so #6 becomes the next active track.",
+  "last_verified_main_sha": "8fd2d24481149d6b68d935631ee463d06de97f55",
+  "evidence": {
+    "linux_ci_run": 35358215699,
+    "linux_ci": "success",
+    "windows_run": 35358215318,
+    "windows_build": "success",
+    "packaged_self_test": "success",
+    "windows_artifact_id": 10553435840,
+    "windows_artifact_digest": "sha256:a23f72836396ce393ea01d59c614aefb5dda1401e17da4ded20f1209eebf402a"
+  },
   "external_blockers": [
     "Vercel scope was re-authorized by the user, but the current Vercel connector still returns 403 when reading the progress00116 project; treat website read-back verification as externally blocked until the connector can read it."
   ],

@@ -52,6 +52,7 @@ Open it and you get:
 - **Choose Folder**
 - **Runtime: Automatic / Agnes Free / Hermes Local**
 - **Start Building**
+- **Resume** — continue the newest incomplete durable task from its checkpoint without replaying completed work
 - live run output plus durable task/checkpoint/evidence records
 
 > The v0.2 community EXE is not code-signed yet, so Windows SmartScreen may warn on first launch.
@@ -79,6 +80,8 @@ firstwindow setup
 firstwindow setup --install hermes --yes
 firstwindow demo
 firstwindow run "Add a /health endpoint and test it" --accept "tests pass" --accept "GET /health returns 200"
+firstwindow tasks --project .
+firstwindow resume <task_id> --project .
 firstwindow evidence <task_id> --criterion AC-001 --kind test --detail "tests passed"
 firstwindow verify <task_id>
 ```
@@ -99,6 +102,12 @@ New tasks use stable acceptance IDs and criterion-level evidence coverage. Exist
 See [Durable State Contract](docs/DURABLE_STATE.md) for schema compatibility and verification semantics.
 
 Chat output is working context. Durable repository state is the recovery source.
+
+### Durable Resume
+
+`firstwindow tasks` lists incomplete tasks only. Verified-complete tasks are excluded and `firstwindow resume` refuses to resume them.
+
+Resume prompts are rebuilt from `task.json`, `checkpoint.json`, and append-only evidence. The checkpoint `next_action` is the primary continuation point; existing passing evidence is included so the agent is instructed not to replay completed work or repeat already-evidenced side effects unless the checkpoint requires it.
 
 ## $0 Guard
 
@@ -155,7 +164,6 @@ Windows CI additionally:
 
 ## Roadmap
 
-- resume button for interrupted tasks
 - richer progress stream
 - signed Windows binaries
 - macOS packaged app
