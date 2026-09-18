@@ -12,7 +12,7 @@ import uuid
 
 from .bootstrap import install_command, setup_actions
 from .demo_project import create_demo_project
-from .durable import append_evidence, create_task, verify_task, write_checkpoint
+from .durable import append_evidence, create_task, verification_report, write_checkpoint
 from .router import choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command, run_command
 from .system_status import read_hermes_model
@@ -88,6 +88,7 @@ def demo(args: argparse.Namespace) -> int:
 def run(args: argparse.Namespace) -> int:
     project = args.project
     task_id = args.task_id or f"fw-{uuid.uuid4().hex[:10]}"
+    default_acceptance = args.accept is None
     create_task(
         project,
         task_id,
@@ -118,7 +119,20 @@ def run(args: argparse.Namespace) -> int:
         command = hermes_command(project, task_id, args.task, model, provider=lane.provider)
 
     code = run_command(command, project, dry_run=args.dry_run)
-    append_evidence(project, task_id, "agent-exit", code == 0, f"{lane.name} exit_code={code}")
+    if args.dry_run:
+        append_evidence(project, task_id, "dry-run", False, "Command planned only; agent was not executed.")
+        write_checkpoint(project, task_id, "dry-run", "Execute the task without --dry-run to collect runtime evidence.")
+        print(f"task_id={task_id}\nlane={lane.name}\ndry_run=true")
+        return 0
+
+    append_evidence(
+        project,
+        task_id,
+        "agent-exit",
+        code == 0,
+        f"{lane.name} exit_code={code}",
+        criteria=["AC-001"] if default_acceptance else None,
+    )
     write_checkpoint(
         project,
         task_id,
@@ -129,13 +143,37 @@ def run(args: argparse.Namespace) -> int:
     return code
 
 
+def evidence(args: argparse.Namespace) -> int:
+    append_evidence(
+        args.project,
+        args.task_id,
+        args.kind,
+        not args.fail,
+        args.detail,
+        criteria=args.criterion,
+    )
+    state = "FAIL" if args.fail else "PASS"
+    refs = ",".join(args.criterion or []) or "none"
+    print(f"evidence={state} criteria={refs}")
+    return 0
+
+
 def verify(args: argparse.Namespace) -> int:
-    ok, failures = verify_task(args.project, args.task_id)
-    if ok:
-        print("VERIFIED: durable state plus passing evidence are present.")
+    report = verification_report(args.project, args.task_id)
+    if report["mode"] == "criteria":
+        for item in report["covered"]:
+            print(f"COVERED {item['id']}: {item['text']}")
+        for item in report["uncovered"]:
+            print(f"UNCOVERED {item['id']}: {item['text']}")
+        for item in report["failed"]:
+            print(f"FAILED {item['id']}: {item['text']}")
+
+    if report["ok"]:
+        print("VERIFIED: acceptance criteria are covered by current passing evidence.")
         return 0
+
     print("NOT VERIFIED")
-    for failure in failures:
+    for failure in report["failures"]:
         print(f"- {failure}")
     return 1
 
@@ -166,6 +204,14 @@ def parser() -> argparse.ArgumentParser:
     x.add_argument("--model")
     x.add_argument("--dry-run", action="store_true")
 
+    e = sub.add_parser("evidence")
+    e.add_argument("task_id")
+    e.add_argument("--project", type=_project, default=Path.cwd())
+    e.add_argument("--criterion", action="append")
+    e.add_argument("--kind", default="manual")
+    e.add_argument("--detail", required=True)
+    e.add_argument("--fail", action="store_true")
+
     v = sub.add_parser("verify")
     v.add_argument("task_id")
     v.add_argument("--project", type=_project, default=Path.cwd())
@@ -184,6 +230,8 @@ def main() -> int:
         return route(args)
     if args.command == "run":
         return run(args)
+    if args.command == "evidence":
+        return evidence(args)
     if args.command == "verify":
         return verify(args)
     return 2

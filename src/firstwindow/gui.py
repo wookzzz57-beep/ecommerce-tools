@@ -284,7 +284,14 @@ def main() -> int:
                         for line in process.stdout:
                             self.events.put(("log", line.rstrip()))
                     code = process.wait()
-                    append_evidence(project, task_id, "agent-exit", code == 0, f"{lane.name} exit_code={code}")
+                    append_evidence(
+                        project,
+                        task_id,
+                        "agent-exit",
+                        code == 0,
+                        f"{lane.name} exit_code={code}",
+                        criteria=["AC-001"],
+                    )
                     write_checkpoint(
                         project,
                         task_id,
