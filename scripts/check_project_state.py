@@ -45,19 +45,38 @@ def validate_project_state(state: dict[str, Any]) -> list[str]:
 
     queue = state["engineering_queue"]
     active = state["active_engineering_issue"]
-    if not isinstance(queue, list) or not queue:
-        failures.append("engineering_queue must be a non-empty list")
-    elif active not in queue:
-        failures.append("active_engineering_issue must appear in engineering_queue")
-    elif queue[0] != active:
-        failures.append("active_engineering_issue must be first in engineering_queue")
+    status = state["status"]
 
-    if len(queue) != len(set(queue)):
+    if not isinstance(queue, list):
+        failures.append("engineering_queue must be a list")
+    elif status == "released":
+        if queue:
+            failures.append("released state must have an empty engineering_queue")
+        if active is not None:
+            failures.append("released state must not have an active_engineering_issue")
+    else:
+        if not queue:
+            failures.append("engineering_queue must be a non-empty list")
+        elif active not in queue:
+            failures.append("active_engineering_issue must appear in engineering_queue")
+        elif queue[0] != active:
+            failures.append("active_engineering_issue must be first in engineering_queue")
+
+    if isinstance(queue, list) and len(queue) != len(set(queue)):
         failures.append("engineering_queue must not contain duplicates")
 
     launch_track = state["launch_track"]
     if not isinstance(launch_track, list):
         failures.append("launch_track must be a list")
+    elif status == "released" and launch_track:
+        failures.append("released state must have an empty launch_track")
+
+    if status == "released":
+        blockers = state.get("external_blockers", [])
+        if not isinstance(blockers, list):
+            failures.append("external_blockers must be a list when status is released")
+        elif blockers:
+            failures.append("released state must have no external_blockers")
 
     for field in ("phase", "current_release", "primary_objective", "resume_point", "last_verified_main_sha"):
         value = state[field]
@@ -93,9 +112,11 @@ def main() -> int:
         print("\n".join(f"- {item}" for item in failures))
         return 1
 
+    active_issue = state["active_engineering_issue"]
+    active_display = f"#{active_issue}" if active_issue is not None else "none"
     print(
         "project state ok: "
-        f"phase={state['phase']} active_issue=#{state['active_engineering_issue']} "
+        f"phase={state['phase']} status={state['status']} active_issue={active_display} "
         f"resume={state['resume_point']}"
     )
     return 0
