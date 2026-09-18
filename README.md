@@ -27,7 +27,7 @@ Download → Diagnose → Set Up $0 Path → Choose Folder → Describe Task →
 
 **Agnes Free** is the fast cloud lane when you have explicitly verified a free provider.
 
-**Hermes Local** is the durable local fallback. Current Hermes Desktop manages its own Local Models runtime and downloads, so FirstWindow v0.2 does not require Ollama as the default beginner path.
+**Hermes Local** is the durable local fallback. Current Hermes Desktop manages its own Local Models runtime and downloads, so FirstWindow v0.3 does not require Ollama as the default beginner path.
 
 Automatic mode:
 
@@ -39,15 +39,16 @@ Hermes Managed Local
 BLOCK — no silent paid fallback
 ```
 
-## Windows beginner preview
+## Windows beginner distribution
 
 GitHub Actions builds a single-file `FirstWindow-Windows-x64.exe`.
 
 Open it and you get:
 
 - **Diagnose** — detect installed runtimes and whether a verified $0 lane is ready
-- **Set Up $0 Path** — guided Hermes installation/local-model setup
-- **Install Agnes / Hermes** — fixed official installer commands, shown before execution
+- **Set Up $0 Path** — opens the official Hermes Desktop flow when Hermes is missing
+- **Get Agnes Desktop / Get Hermes Desktop** — official browser-based beginner install path
+- **Advanced CLI fallback** — documented PowerShell installers remain available only by explicit choice
 - **Create Demo** — generate a safe first project
 - **Choose Folder**
 - **Runtime: Automatic / Agnes Free / Hermes Local**
@@ -55,7 +56,7 @@ Open it and you get:
 - **Resume** — continue the newest incomplete durable task from its checkpoint without replaying completed work
 - live run output plus durable task/checkpoint/evidence records
 
-> The v0.2 community EXE is not code-signed yet, so Windows SmartScreen may warn on first launch.
+> The v0.3 community EXE is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning. Download `SHA256SUMS.txt` from the same Release to verify the exact packaged EXE.
 
 ## Python install
 
@@ -125,8 +126,8 @@ A managed `llamacpp` Local Model is treated as a local lane. FirstWindow does no
 
 - no API keys stored by FirstWindow
 - no automatic paid fallback
-- remote installers are fixed to documented Agnes/Hermes official commands
-- installer execution requires explicit confirmation
+- beginner setup opens official Desktop download pages instead of silently executing remote scripts
+- advanced CLI installers remain fixed to documented Agnes/Hermes commands and require explicit confirmation
 - unsafe task IDs/path traversal are rejected
 - worker output is not acceptance evidence
 - no shutdown, restart, sleep, or power operations
@@ -158,14 +159,14 @@ Windows CI additionally:
 - imports Tkinter
 - builds the single-file EXE with PyInstaller
 - launches the packaged EXE in `--self-test` mode
-- prints SHA-256
-- uploads the binary artifact
-- publishes or refreshes the `v0.2.0` release
+- generates `SHA256SUMS.txt`
+- uploads the EXE + checksum as CI artifacts
+- publishes a Release only from a `v*` tag whose version matches `pyproject.toml`
 
 ## Roadmap
 
 - richer progress stream
-- signed Windows binaries
+- code-signed Windows binaries
 - macOS packaged app
 - free-quota detection where a provider exposes reliable data
 - beginner project templates

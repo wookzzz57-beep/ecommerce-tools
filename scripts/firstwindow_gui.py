@@ -8,11 +8,14 @@ import tempfile
 def self_test() -> int:
     import tkinter  # noqa: F401
     from firstwindow.bootstrap import install_command
+    from firstwindow.distribution import beginner_setup_action
     from firstwindow.durable import create_task
     from firstwindow.resume import discover_resumable_tasks
     from firstwindow.system_status import parse_hermes_model_json
 
     assert install_command("windows", "hermes")[0] == "powershell"
+    assert beginner_setup_action("hermes").kind == "open_url"
+    assert "hermes-agent.nousresearch.com" in beginner_setup_action("hermes").target
     assert parse_hermes_model_json('{"provider":"llamacpp","default":"demo"}')["provider"] == "llamacpp"
     with tempfile.TemporaryDirectory() as tmp:
         project = Path(tmp)
