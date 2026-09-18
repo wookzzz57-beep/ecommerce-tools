@@ -38,7 +38,7 @@ def validate_project_state(state: dict[str, Any]) -> list[str]:
         failures.append("project must be FirstWindow")
     if state["canonical_branch"] != "main":
         failures.append("canonical_branch must be main")
-    if state["status"] not in {"active", "blocked", "release-candidate", "released"}:
+    if state["status"] not in {"active", "blocked", "release-candidate", "released", "post-release"}:
         failures.append("status is not recognized")
     if state["wip_limit"] != 1:
         failures.append("wip_limit must remain 1 for primary engineering work")
@@ -49,11 +49,11 @@ def validate_project_state(state: dict[str, Any]) -> list[str]:
 
     if not isinstance(queue, list):
         failures.append("engineering_queue must be a list")
-    elif status == "released":
+    elif status in {"released", "post-release"}:
         if queue:
-            failures.append("released state must have an empty engineering_queue")
+            failures.append(f"{status} state must have an empty engineering_queue")
         if active is not None:
-            failures.append("released state must not have an active_engineering_issue")
+            failures.append(f"{status} state must not have an active_engineering_issue")
     else:
         if not queue:
             failures.append("engineering_queue must be a non-empty list")
@@ -68,14 +68,35 @@ def validate_project_state(state: dict[str, Any]) -> list[str]:
     launch_track = state["launch_track"]
     if not isinstance(launch_track, list):
         failures.append("launch_track must be a list")
-    elif status == "released" and launch_track:
-        failures.append("released state must have an empty launch_track")
+    else:
+        if len(launch_track) != len(set(launch_track)):
+            failures.append("launch_track must not contain duplicates")
+        if status == "released" and launch_track:
+            failures.append("released state must have an empty launch_track")
+        if status == "post-release" and not launch_track:
+            failures.append("post-release state must have a non-empty launch_track")
 
-    if status == "released":
-        blockers = state.get("external_blockers", [])
+    if status == "post-release":
+        launch_control = state.get("launch_control")
+        if not isinstance(launch_control, dict):
+            failures.append("post-release state must define launch_control")
+        else:
+            active_launch = launch_control.get("active_issue")
+            if not isinstance(active_launch, int) or active_launch <= 0:
+                failures.append("launch_control.active_issue must be a positive issue number")
+            elif isinstance(launch_track, list) and launch_track and active_launch != launch_track[0]:
+                failures.append("launch_control.active_issue must be first in launch_track")
+
+            if launch_control.get("experiment_wip_limit") != 1:
+                failures.append("launch_control.experiment_wip_limit must be 1")
+            if launch_control.get("product_baseline_frozen") is not True:
+                failures.append("launch_control.product_baseline_frozen must be true")
+
+    blockers = state.get("external_blockers", [])
+    if status in {"released", "post-release"}:
         if not isinstance(blockers, list):
-            failures.append("external_blockers must be a list when status is released")
-        elif blockers:
+            failures.append("external_blockers must be a list")
+        elif status == "released" and blockers:
             failures.append("released state must have no external_blockers")
 
     for field in ("phase", "current_release", "primary_objective", "resume_point", "last_verified_main_sha"):
@@ -114,10 +135,15 @@ def main() -> int:
 
     active_issue = state["active_engineering_issue"]
     active_display = f"#{active_issue}" if active_issue is not None else "none"
+    launch_display = "none"
+    launch_control = state.get("launch_control")
+    if isinstance(launch_control, dict) and launch_control.get("active_issue"):
+        launch_display = f"#{launch_control['active_issue']}"
+
     print(
         "project state ok: "
         f"phase={state['phase']} status={state['status']} active_issue={active_display} "
-        f"resume={state['resume_point']}"
+        f"launch_issue={launch_display} resume={state['resume_point']}"
     )
     return 0
 
