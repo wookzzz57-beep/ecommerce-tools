@@ -51,7 +51,7 @@ jobs:
           path: dist/FirstWindow-Windows-x64.exe
           if-no-files-found: error
 
-      - name: Publish v0.2.0 release once
+      - name: Publish or refresh v0.2.0 release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         env:
@@ -59,7 +59,7 @@ jobs:
         run: |
           gh release view v0.2.0 *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create v0.2.0 ".\dist\FirstWindow-Windows-x64.exe" --title "FirstWindow v0.2.0 — Beginner Preview" --notes "Windows single-file preview. Download the EXE, run Diagnose, set up a verified $0 path, choose a folder, and start building. The binary is currently unsigned, so Windows SmartScreen may warn on first launch."
+            gh release create v0.2.0 ".\dist\FirstWindow-Windows-x64.exe" --title "FirstWindow v0.2.0 — Beginner Preview" --notes-file "docs/release-notes-v0.2.0.md"
           } else {
-            Write-Host "v0.2.0 release already exists; leaving it unchanged."
+            gh release edit v0.2.0 --title "FirstWindow v0.2.0 — Beginner Preview" --notes-file "docs/release-notes-v0.2.0.md"
           }
