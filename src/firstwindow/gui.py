@@ -13,6 +13,7 @@ from .bootstrap import install_command
 from .demo_project import create_demo_project
 from .durable import append_evidence, create_task, write_checkpoint
 from .onboarding import BeginnerState, recommend_next_action
+from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command
 from .system_status import hermes_local_ready, read_hermes_model
@@ -27,14 +28,16 @@ def main() -> int:
         def __init__(self, root: tk.Tk):
             self.root = root
             self.root.title("FirstWindow")
-            self.root.geometry("900x720")
-            self.root.minsize(760, 620)
+            self.root.geometry("920x760")
+            self.root.minsize(780, 640)
             self.events: queue.Queue[tuple[str, str]] = queue.Queue()
             self.project_var = tk.StringVar()
             self.runtime_var = tk.StringVar(value="Automatic ($0)")
             self.agnes_free_var = tk.BooleanVar(value=False)
             self.status_var = tk.StringVar(value="Checking your computer…")
             self.next_var = tk.StringVar(value="")
+            self.resume_var = tk.StringVar(value="No resumable task selected.")
+            self.resume_candidate = None
             self.running = False
             self._build()
             self.refresh()
@@ -76,6 +79,13 @@ def main() -> int:
             ttk.Entry(row, textvariable=self.project_var).pack(side="left", fill="x", expand=True)
             ttk.Button(row, text="Browse…", command=self.choose_project).pack(side="left", padx=(8, 0))
             ttk.Button(row, text="Create Demo", command=self.create_demo).pack(side="left", padx=(8, 0))
+
+            resume_row = ttk.Frame(project_box)
+            resume_row.pack(fill="x", pady=(10, 0))
+            ttk.Label(resume_row, textvariable=self.resume_var).pack(side="left", fill="x", expand=True)
+            ttk.Button(resume_row, text="Refresh Resume", command=self.refresh_resume).pack(side="right")
+            self.resume_button = ttk.Button(resume_row, text="Resume", command=self.resume_latest, state="disabled")
+            self.resume_button.pack(side="right", padx=(0, 8))
 
             task_box = ttk.LabelFrame(outer, text="3. Describe what you want", padding=14)
             task_box.pack(fill="both", expand=True)
@@ -151,11 +161,13 @@ def main() -> int:
                 "install": "No runtime detected. “Set Up $0 Path” installs Hermes using its official installer.",
                 "configure": "Runtime detected. Finish one-time free/local model setup, then Diagnose again.",
             }[action])
+            self.refresh_resume()
 
         def choose_project(self) -> None:
             path = filedialog.askdirectory(title="Choose your project folder")
             if path:
                 self.project_var.set(path)
+                self.refresh_resume()
 
         def create_demo(self) -> None:
             parent = filedialog.askdirectory(title="Choose where to create FirstWindow-Demo")
@@ -169,6 +181,24 @@ def main() -> int:
                 return
             self.project_var.set(str(target))
             self._append(f"Created demo project: {target}")
+            self.refresh_resume()
+
+        def refresh_resume(self) -> None:
+            project = Path(self.project_var.get()).expanduser()
+            self.resume_candidate = None
+            self.resume_button.configure(state="disabled")
+            if not project.is_dir():
+                self.resume_var.set("Choose a project to scan for interrupted tasks.")
+                return
+            tasks = discover_resumable_tasks(project)
+            if not tasks:
+                self.resume_var.set("No incomplete durable tasks found.")
+                return
+            self.resume_candidate = tasks[0]
+            item = tasks[0]
+            self.resume_var.set(f"Resume {item.task_id} · {item.stage} · next: {item.next_action}")
+            if not self.running:
+                self.resume_button.configure(state="normal")
 
         def _creation_flags(self) -> int:
             return subprocess.CREATE_NEW_CONSOLE if os.name == "nt" else 0
@@ -227,45 +257,32 @@ def main() -> int:
         def _preferred(self) -> str | None:
             return {"Agnes Free":"agnes-free","Hermes Local":"hermes-local"}.get(self.runtime_var.get())
 
-        def start(self) -> None:
-            if self.running:
-                return
-            project = Path(self.project_var.get()).expanduser()
-            task = self.task.get("1.0", "end").strip()
-            if not project.is_dir():
-                messagebox.showerror("Project", "Choose an existing project folder.")
-                return
-            if not task:
-                messagebox.showerror("Task", "Describe what you want to build.")
-                return
-
-            env = self._env()
+        def _lane(self, env):
             model = read_hermes_model()
-            try:
-                lane = choose_lane(
-                    detect_lanes(env, hermes_model=model),
-                    zero_cost=True,
-                    preferred=self._preferred(),
-                )
-            except Exception as exc:
-                messagebox.showerror("$0 Guard", str(exc))
-                return
+            return choose_lane(
+                detect_lanes(env, hermes_model=model),
+                zero_cost=True,
+                preferred=self._preferred(),
+            )
 
-            task_id = f"fw-{uuid.uuid4().hex[:10]}"
-            create_task(project, task_id, task, ["Agent process exits successfully."])
-            write_checkpoint(project, task_id, "dispatching", f"Run with {lane.name}.")
-
+        def _command(self, project: Path, task_id: str, prompt: str, lane):
             if lane.engine == "agnes":
-                command = list(agnes_command(project, task_id, task))
-            else:
-                if not lane.model:
-                    messagebox.showerror("Hermes", "Select a Hermes Local Model first.")
-                    return
-                command = list(hermes_command(project, task_id, task, lane.model, provider=lane.provider))
+                return list(agnes_command(project, task_id, prompt))
+            if not lane.model:
+                raise RuntimeError("Select a Hermes Local Model first.")
+            return list(hermes_command(project, task_id, prompt, lane.model, provider=lane.provider))
+
+        def _launch(self, project: Path, task_id: str, prompt: str, lane, env, *, resume_mode: bool, criteria):
+            try:
+                command = self._command(project, task_id, prompt, lane)
+            except Exception as exc:
+                messagebox.showerror("Runtime", str(exc))
+                return
 
             self.running = True
             self.start_button.configure(state="disabled")
-            self._append(f"Task {task_id} → {lane.name}")
+            self.resume_button.configure(state="disabled")
+            self._append(f"{'Resume' if resume_mode else 'Task'} {task_id} → {lane.name}")
             self._append("$0 Guard passed. Starting agent…")
 
             def worker():
@@ -287,16 +304,16 @@ def main() -> int:
                     append_evidence(
                         project,
                         task_id,
-                        "agent-exit",
+                        "resume-agent-exit" if resume_mode else "agent-exit",
                         code == 0,
-                        f"{lane.name} exit_code={code}",
-                        criteria=["AC-001"],
+                        f"{lane.name} {'resume_' if resume_mode else ''}exit_code={code}",
+                        criteria=criteria,
                     )
                     write_checkpoint(
                         project,
                         task_id,
                         "agent-finished" if code == 0 else "agent-failed",
-                        "Review evidence and verify." if code == 0 else "Inspect failure and resume.",
+                        "Review evidence and verify." if code == 0 else "Inspect failure and resume from the latest checkpoint.",
                     )
                     self.events.put(("done", f"{'Finished' if code == 0 else 'Failed'} · exit {code} · task {task_id}"))
                 except Exception as exc:
@@ -305,6 +322,61 @@ def main() -> int:
                     self.events.put(("done", f"Launcher failed: {exc}"))
 
             threading.Thread(target=worker, daemon=True).start()
+
+        def start(self) -> None:
+            if self.running:
+                return
+            project = Path(self.project_var.get()).expanduser()
+            task = self.task.get("1.0", "end").strip()
+            if not project.is_dir():
+                messagebox.showerror("Project", "Choose an existing project folder.")
+                return
+            if not task:
+                messagebox.showerror("Task", "Describe what you want to build.")
+                return
+            env = self._env()
+            try:
+                lane = self._lane(env)
+            except Exception as exc:
+                messagebox.showerror("$0 Guard", str(exc))
+                return
+
+            task_id = f"fw-{uuid.uuid4().hex[:10]}"
+            create_task(project, task_id, task, ["Agent process exits successfully."])
+            write_checkpoint(project, task_id, "dispatching", f"Run with {lane.name}.")
+            self._launch(project, task_id, task, lane, env, resume_mode=False, criteria=["AC-001"])
+
+        def resume_latest(self) -> None:
+            if self.running:
+                return
+            project = Path(self.project_var.get()).expanduser()
+            if not project.is_dir():
+                messagebox.showerror("Project", "Choose an existing project folder.")
+                return
+            self.refresh_resume()
+            if self.resume_candidate is None:
+                messagebox.showinfo("Resume", "No incomplete durable task is available.")
+                return
+            try:
+                context = load_resume_context(project, self.resume_candidate.task_id)
+                prompt = build_resume_prompt(context)
+                lane = self._lane(self._env())
+            except Exception as exc:
+                messagebox.showerror("Resume", str(exc))
+                return
+
+            if not messagebox.askyesno(
+                "Resume interrupted task?",
+                f"Task: {context['task_id']}\nStage: {context['stage']}\nNext: {context['next_action']}\n\nContinue from this checkpoint?",
+            ):
+                return
+
+            criteria = None
+            acceptance = context.get("acceptance") or []
+            if len(acceptance) == 1 and acceptance[0].get("text") == "Agent process exits successfully.":
+                criteria = [acceptance[0]["id"]]
+            write_checkpoint(project, context["task_id"], "resuming", context["next_action"])
+            self._launch(project, context["task_id"], prompt, lane, self._env(), resume_mode=True, criteria=criteria)
 
         def _poll_events(self) -> None:
             try:

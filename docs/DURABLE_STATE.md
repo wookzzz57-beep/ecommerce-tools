@@ -97,3 +97,42 @@ This compatibility mode is reported as `legacy`. New tasks are always created as
 Criterion mapping makes coverage explicit and deterministic; it does not make arbitrary evidence text magically trustworthy. Evidence quality should come from observable checks such as tests, build results, probes, generated artifacts, or other reproducible signals.
 
 Worker prose alone is not final acceptance evidence.
+
+
+## Durable Resume
+
+FirstWindow discovers resumable work from `.firstwindow/tasks/`.
+
+A task is eligible only when:
+- its durable task/checkpoint state is readable;
+- deterministic verification does **not** already report the task complete;
+- the schema is supported well enough to build a safe resume context.
+
+Verified-complete tasks are excluded from discovery and fail closed if a caller tries to resume them directly.
+
+Resume context contains:
+- original objective;
+- current checkpoint stage;
+- exact `next_action`;
+- acceptance status;
+- recent append-only evidence.
+
+The generated resume prompt treats repository durable state as canonical and explicitly instructs the execution engine to continue from the checkpoint rather than replay the entire objective.
+
+CLI:
+
+```bash
+firstwindow tasks --project .
+firstwindow resume <task_id> --project .
+```
+
+The GUI exposes the newest incomplete task in the selected project with its stage and next action, then requires an explicit **Resume** action.
+
+Resume appends new evidence. It never rewrites the existing evidence ledger.
+
+
+### Resume prompt trust boundary
+
+Evidence details are inserted into a resume prompt as **untrusted historical data**. Execution engines are explicitly instructed to use evidence as observations only and not to execute instructions embedded inside evidence text.
+
+The checkpoint `next_action` remains the canonical continuation instruction. Evidence can inform what has already been observed or verified, but it does not become a new control channel.

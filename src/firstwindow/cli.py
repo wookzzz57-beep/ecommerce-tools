@@ -13,7 +13,8 @@ import uuid
 from .bootstrap import install_command, setup_actions
 from .demo_project import create_demo_project
 from .durable import append_evidence, create_task, verification_report, write_checkpoint
-from .router import choose_lane, detect_lanes
+from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
+from .router import Lane, choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command, run_command
 from .system_status import read_hermes_model
 
@@ -27,6 +28,32 @@ def _project(value: str) -> Path:
 
 def _lanes(env: dict[str, str] | None = None):
     return detect_lanes(env or os.environ, hermes_model=read_hermes_model())
+
+
+def _agent_command(
+    project: Path,
+    task_id: str,
+    prompt: str,
+    lane: Lane,
+    model_arg: str | None,
+):
+    if lane.engine == "agnes":
+        return agnes_command(project, task_id, prompt)
+
+    model = lane.model or model_arg or ""
+    if not model:
+        raise RuntimeError("No local Hermes model is selected.")
+    return hermes_command(project, task_id, prompt, model, provider=lane.provider)
+
+
+def _default_exit_criterion(context: dict) -> list[str] | None:
+    acceptance = context.get("acceptance") or []
+    if len(acceptance) != 1:
+        return None
+    item = acceptance[0]
+    if item.get("text") == "Agent process exits successfully.":
+        return [item["id"]]
+    return None
 
 
 def doctor() -> int:
@@ -85,6 +112,16 @@ def demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def tasks(args: argparse.Namespace) -> int:
+    found = discover_resumable_tasks(args.project)
+    if not found:
+        print("NO RESUMABLE TASKS")
+        return 0
+    for item in found:
+        print(f"{item.task_id}\t{item.stage}\t{item.next_action}\t{item.objective}")
+    return 0
+
+
 def run(args: argparse.Namespace) -> int:
     project = args.project
     task_id = args.task_id or f"fw-{uuid.uuid4().hex[:10]}"
@@ -101,6 +138,7 @@ def run(args: argparse.Namespace) -> int:
             zero_cost=not args.allow_unknown_cost,
             preferred=args.engine,
         )
+        command = _agent_command(project, task_id, args.task, lane, args.model)
     except Exception as exc:
         append_evidence(project, task_id, "routing", False, str(exc))
         write_checkpoint(project, task_id, "blocked", "Complete a verified $0 setup, then resume.")
@@ -108,16 +146,6 @@ def run(args: argparse.Namespace) -> int:
         return 2
 
     write_checkpoint(project, task_id, "dispatching", f"Run with {lane.name}.")
-    if lane.engine == "agnes":
-        command = agnes_command(project, task_id, args.task)
-    else:
-        model = lane.model or args.model or ""
-        if not model:
-            append_evidence(project, task_id, "routing", False, "No local Hermes model is selected.")
-            write_checkpoint(project, task_id, "blocked", "Select a Hermes Local Model, then resume.")
-            return 2
-        command = hermes_command(project, task_id, args.task, model, provider=lane.provider)
-
     code = run_command(command, project, dry_run=args.dry_run)
     if args.dry_run:
         append_evidence(project, task_id, "dry-run", False, "Command planned only; agent was not executed.")
@@ -140,6 +168,45 @@ def run(args: argparse.Namespace) -> int:
         "Review evidence and run firstwindow verify." if code == 0 else "Inspect failure and resume.",
     )
     print(f"task_id={task_id}\nlane={lane.name}")
+    return code
+
+
+def resume(args: argparse.Namespace) -> int:
+    try:
+        context = load_resume_context(args.project, args.task_id)
+        prompt = build_resume_prompt(context)
+        lane = choose_lane(
+            _lanes(),
+            zero_cost=not args.allow_unknown_cost,
+            preferred=args.engine,
+        )
+        command = _agent_command(args.project, args.task_id, prompt, lane, args.model)
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if args.dry_run:
+        code = run_command(command, args.project, dry_run=True)
+        print(f"task_id={args.task_id}\nlane={lane.name}\nresume=true\ndry_run=true")
+        return code
+
+    write_checkpoint(args.project, args.task_id, "resuming", context["next_action"])
+    code = run_command(command, args.project, dry_run=False)
+    append_evidence(
+        args.project,
+        args.task_id,
+        "resume-agent-exit",
+        code == 0,
+        f"{lane.name} resume_exit_code={code}",
+        criteria=_default_exit_criterion(context),
+    )
+    write_checkpoint(
+        args.project,
+        args.task_id,
+        "agent-finished" if code == 0 else "agent-failed",
+        "Review evidence and run firstwindow verify." if code == 0 else "Inspect failure and resume again from the latest checkpoint.",
+    )
+    print(f"task_id={args.task_id}\nlane={lane.name}\nresume=true")
     return code
 
 
@@ -190,6 +257,9 @@ def parser() -> argparse.ArgumentParser:
     d = sub.add_parser("demo")
     d.add_argument("path", nargs="?", default="FirstWindow-Demo")
 
+    tl = sub.add_parser("tasks")
+    tl.add_argument("--project", type=_project, default=Path.cwd())
+
     r = sub.add_parser("route")
     r.add_argument("--engine", choices=["agnes", "hermes", "agnes-free", "hermes-local"])
     r.add_argument("--allow-unknown-cost", action="store_true")
@@ -203,6 +273,14 @@ def parser() -> argparse.ArgumentParser:
     x.add_argument("--allow-unknown-cost", action="store_true")
     x.add_argument("--model")
     x.add_argument("--dry-run", action="store_true")
+
+    rr = sub.add_parser("resume")
+    rr.add_argument("task_id")
+    rr.add_argument("--project", type=_project, default=Path.cwd())
+    rr.add_argument("--engine", choices=["agnes", "hermes", "agnes-free", "hermes-local"])
+    rr.add_argument("--allow-unknown-cost", action="store_true")
+    rr.add_argument("--model")
+    rr.add_argument("--dry-run", action="store_true")
 
     e = sub.add_parser("evidence")
     e.add_argument("task_id")
@@ -226,10 +304,14 @@ def main() -> int:
         return setup(args)
     if args.command == "demo":
         return demo(args)
+    if args.command == "tasks":
+        return tasks(args)
     if args.command == "route":
         return route(args)
     if args.command == "run":
         return run(args)
+    if args.command == "resume":
+        return resume(args)
     if args.command == "evidence":
         return evidence(args)
     if args.command == "verify":
