@@ -1,70 +1,149 @@
 # FirstWindow
 
-> **Your first coding agent. A verified $0 path, one window, no surprise API bill.**
+> **Your first coding agent. One window. A verified $0 path. No surprise API bill.**
 
-FirstWindow is a beginner-friendly launcher that routes coding work to an explicitly confirmed free Agnes setup or a local Hermes + Ollama setup, while keeping durable task state, checkpoints, and evidence on disk.
+FirstWindow is a beginner-first launcher over **Agnes Code + Hermes Agent**. It hides provider plumbing, keeps a strict $0 guard, persists task/checkpoint/evidence state, and refuses to treat an agent's “done” message as proof by itself.
 
-## The promise
+[Download Windows](../../releases/latest/download/FirstWindow-Windows-x64.exe) · [Beginner Guide](docs/BEGINNER.md)
 
-**$0 Mode never silently falls back to a provider whose cost is unknown.**
+## The problem
 
-## Architecture
+Coding agents are powerful, but the first experience is fragmented:
+
+- install a runtime
+- understand providers and API billing
+- configure a local model
+- open terminals
+- recover a half-finished task
+- verify whether “done” is actually done
+
+FirstWindow turns that into:
 
 ```text
-FirstWindow
-├─ Beginner CLI / web demo
-├─ $0 Free Guard
-├─ Router
-│  ├─ Agnes free-confirmed lane
-│  └─ Hermes + Ollama local lane
-└─ Durable Core
-   ├─ task.json
-   ├─ checkpoint.json
-   └─ evidence.jsonl
+Download → Diagnose → Set Up $0 Path → Choose Folder → Describe Task → Start
 ```
 
-## Quick start
+## Why two runtimes?
+
+**Agnes Free** is the fast cloud lane when you have explicitly verified a free provider.
+
+**Hermes Local** is the durable local fallback. Current Hermes Desktop manages its own Local Models runtime and downloads, so FirstWindow v0.2 does not require Ollama as the default beginner path.
+
+Automatic mode:
+
+```text
+Agnes Free (confirmed)
+        ↓ unavailable
+Hermes Managed Local
+        ↓ unavailable
+BLOCK — no silent paid fallback
+```
+
+## Windows beginner preview
+
+GitHub Actions builds a single-file `FirstWindow-Windows-x64.exe`.
+
+Open it and you get:
+
+- **Diagnose** — detect installed runtimes and whether a verified $0 lane is ready
+- **Set Up $0 Path** — guided Hermes installation/local-model setup
+- **Install Agnes / Hermes** — fixed official installer commands, shown before execution
+- **Create Demo** — generate a safe first project
+- **Choose Folder**
+- **Runtime: Automatic / Agnes Free / Hermes Local**
+- **Start Building**
+- live run output plus durable task/checkpoint/evidence records
+
+> The v0.2 community EXE is not code-signed yet, so Windows SmartScreen may warn on first launch.
+
+## Python install
 
 ```bash
 python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
+
+# macOS/Linux
+source .venv/bin/activate
+
 pip install -e .
 firstwindow doctor
+firstwindow-gui
 ```
 
-For an Agnes provider you have verified is free:
+CLI helpers:
 
 ```bash
-export FIRSTWINDOW_AGNES_FREE_CONFIRMED=1
+firstwindow setup
+firstwindow setup --install hermes --yes
+firstwindow demo
+firstwindow run "Add a /health endpoint and test it"
+firstwindow verify <task_id>
 ```
 
-For Hermes + local Ollama, configure Hermes Custom endpoint to `http://localhost:11434/v1`, then:
+## Durable state
+
+Each task lives under:
+
+```text
+.firstwindow/tasks/<task_id>/
+├── task.json
+├── checkpoint.json
+└── evidence.jsonl
+```
+
+Chat output is working context. Durable repository state is the recovery source.
+
+## $0 Guard
+
+FirstWindow does **not** claim every Agnes provider is free. Agnes supports free and paid providers. Agnes is eligible for `$0 Mode` only after explicit user confirmation.
+
+For Hermes, FirstWindow reads only the non-secret model configuration:
+
+```text
+hermes config get model --json
+```
+
+A managed `llamacpp` Local Model is treated as a local lane. FirstWindow does not read Hermes credential files.
+
+## Security boundaries
+
+- no API keys stored by FirstWindow
+- no automatic paid fallback
+- remote installers are fixed to documented Agnes/Hermes official commands
+- installer execution requires explicit confirmation
+- unsafe task IDs/path traversal are rejected
+- worker output is not acceptance evidence
+- no shutdown, restart, sleep, or power operations
+
+## Verification
+
+Linux CI runs:
 
 ```bash
-export FIRSTWINDOW_HERMES_LOCAL_CONFIRMED=1
-export FIRSTWINDOW_LOCAL_MODEL="qwen3.5:9b"
+python scripts/validate.py
+python -m compileall -q src scripts tests
+PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
-Dry run:
+Windows CI additionally:
 
-```bash
-firstwindow run "Add a /health endpoint and test it" --dry-run
-```
+- imports Tkinter
+- builds the single-file EXE with PyInstaller
+- launches the packaged EXE in `--self-test` mode
+- prints SHA-256
+- uploads the binary artifact
+- publishes the first `v0.2.0` release after a successful main build
 
-## Ships in v0.1
+## Roadmap
 
-- deterministic Free Guard
-- Agnes Recipe adapter using `agnes run --recipe`
-- Hermes one-shot adapter using `hermes -z`
-- durable task/checkpoint/evidence state
-- verification gate
-- zero-dependency Python CLI
-- tests + GitHub Actions
-- static public router demo
-
-## Scope honesty
-
-FirstWindow does not claim every Agnes provider is free. The free guard requires explicit confirmation. The Hermes local lane requires an already configured local endpoint in v0.1 and does not rewrite global Hermes settings.
+- criterion-to-evidence mapping
+- resume button for interrupted tasks
+- richer progress stream
+- signed Windows binaries
+- macOS packaged app
+- free-quota detection where a provider exposes reliable data
+- beginner project templates
 
 MIT licensed.
