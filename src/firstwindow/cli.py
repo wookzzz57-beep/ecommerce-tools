@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import platform
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,7 @@ from .demo_project import create_demo_project
 from .durable import append_evidence, create_task, verify_task, write_checkpoint
 from .router import choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command, run_command
-from .system_status import parse_hermes_model_json
+from .system_status import read_hermes_model
 
 
 def _project(value: str) -> Path:
@@ -24,26 +25,8 @@ def _project(value: str) -> Path:
     return path
 
 
-def _hermes_model() -> dict:
-    if shutil.which("hermes") is None:
-        return {}
-    try:
-        completed = subprocess.run(
-            ["hermes", "config", "get", "model", "--json"],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return {}
-    if completed.returncode != 0:
-        return {}
-    return parse_hermes_model_json(completed.stdout)
-
-
 def _lanes(env: dict[str, str] | None = None):
-    return detect_lanes(env or os.environ, hermes_model=_hermes_model())
+    return detect_lanes(env or os.environ, hermes_model=read_hermes_model())
 
 
 def doctor() -> int:
@@ -72,7 +55,7 @@ def setup(args: argparse.Namespace) -> int:
     hermes_installed = shutil.which("hermes") is not None
 
     if args.install:
-        command = install_command(sys.platform if sys.platform == "win32" else sys.platform, args.install)
+        command = install_command(platform.system(), args.install)
         print("Installer command:")
         print(" ".join(command))
         if not args.yes:
@@ -132,13 +115,7 @@ def run(args: argparse.Namespace) -> int:
             append_evidence(project, task_id, "routing", False, "No local Hermes model is selected.")
             write_checkpoint(project, task_id, "blocked", "Select a Hermes Local Model, then resume.")
             return 2
-        command = hermes_command(
-            project,
-            task_id,
-            args.task,
-            model,
-            provider=lane.provider or "custom",
-        )
+        command = hermes_command(project, task_id, args.task, model, provider=lane.provider)
 
     code = run_command(command, project, dry_run=args.dry_run)
     append_evidence(project, task_id, "agent-exit", code == 0, f"{lane.name} exit_code={code}")
@@ -166,7 +143,6 @@ def verify(args: argparse.Namespace) -> int:
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="firstwindow")
     sub = p.add_subparsers(dest="command", required=True)
-
     sub.add_parser("doctor")
 
     s = sub.add_parser("setup")

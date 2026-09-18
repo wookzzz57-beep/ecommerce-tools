@@ -1,0 +1,65 @@
+name: Windows App
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install package and packager
+        run: python -m pip install . pyinstaller
+
+      - name: Verify Tkinter
+        run: python -c "import tkinter; print('tkinter ok')"
+
+      - name: Build single-file Windows app
+        run: >
+          pyinstaller
+          --noconfirm
+          --clean
+          --onefile
+          --windowed
+          --name FirstWindow-Windows-x64
+          --paths src
+          scripts/firstwindow_gui.py
+
+      - name: Run packaged self-test
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath ".\dist\FirstWindow-Windows-x64.exe" -ArgumentList "--self-test" -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Packaged self-test failed with exit code $($p.ExitCode)" }
+
+      - name: SHA256
+        shell: pwsh
+        run: Get-FileHash ".\dist\FirstWindow-Windows-x64.exe" -Algorithm SHA256 | Format-List
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FirstWindow-Windows-x64
+          path: dist/FirstWindow-Windows-x64.exe
+          if-no-files-found: error
+
+      - name: Publish v0.2.0 release once
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v0.2.0 *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create v0.2.0 ".\dist\FirstWindow-Windows-x64.exe" --title "FirstWindow v0.2.0 — Beginner Preview" --notes "Windows single-file preview. Download the EXE, run Diagnose, set up a verified $0 path, choose a folder, and start building. The binary is currently unsigned, so Windows SmartScreen may warn on first launch."
+          } else {
+            Write-Host "v0.2.0 release already exists; leaving it unchanged."
+          }

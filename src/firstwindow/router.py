@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 import shutil
-from typing import Mapping, Any
+from typing import Any, Mapping
 
 from .system_status import hermes_local_ready
 
@@ -55,22 +55,22 @@ def detect_lanes(
 
     return [
         Lane(
-            name="agnes-free",
-            engine="agnes",
-            zero_cost=True,
-            available=agnes and agnes_free,
-            reason=(
+            "agnes-free",
+            "agnes",
+            True,
+            agnes and agnes_free,
+            (
                 "Agnes CLI detected and its configured provider is explicitly confirmed free."
                 if agnes and agnes_free
                 else "Requires Agnes CLI plus explicit free-provider confirmation."
             ),
         ),
         Lane(
-            name="hermes-local",
-            engine="hermes",
-            zero_cost=True,
-            available=hermes_zero_ready,
-            reason=(
+            "hermes-local",
+            "hermes",
+            True,
+            hermes_zero_ready,
+            (
                 "Hermes managed Local Models runtime is selected."
                 if hermes and managed_local
                 else (
@@ -79,22 +79,22 @@ def detect_lanes(
                     else "Requires Hermes with a selected managed Local Model."
                 )
             ),
-            provider="llamacpp" if managed_local else ("custom" if manual_local else None),
-            model=managed_model if managed_local else (manual_model or None),
+            None if managed_local else ("custom" if manual_local else None),
+            managed_model if managed_local else (manual_model or None),
         ),
         Lane(
-            name="agnes-configured",
-            engine="agnes",
-            zero_cost=False,
-            available=agnes,
-            reason="Uses the provider configured in Agnes; cost is not guaranteed to be $0.",
+            "agnes-configured",
+            "agnes",
+            False,
+            agnes,
+            "Uses the provider configured in Agnes; cost is not guaranteed to be $0.",
         ),
         Lane(
-            name="hermes-configured",
-            engine="hermes",
-            zero_cost=False,
-            available=hermes,
-            reason="Uses the provider configured in Hermes; cost is not guaranteed to be $0.",
+            "hermes-configured",
+            "hermes",
+            False,
+            hermes,
+            "Uses the provider configured in Hermes; cost is not guaranteed to be $0.",
         ),
     ]
 

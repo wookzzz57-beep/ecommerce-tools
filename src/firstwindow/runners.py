@@ -37,22 +37,17 @@ def hermes_command(
     task: str,
     model: str,
     *,
-    provider: str = "custom",
+    provider: str | None = "custom",
 ) -> Sequence[str]:
     runtime = project / ".firstwindow" / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
     usage = runtime / f"{task_id}-hermes-usage.json"
-    return [
-        "hermes",
-        "-z",
-        task,
-        "--provider",
-        provider,
-        "--model",
-        model,
-        "--usage-file",
-        str(usage),
-    ]
+
+    command: list[str] = ["hermes", "-z", task]
+    if provider:
+        command.extend(["--provider", provider])
+    command.extend(["--model", model, "--usage-file", str(usage)])
+    return command
 
 
 def run_command(command: Sequence[str], project: Path, *, dry_run: bool = False) -> int:
