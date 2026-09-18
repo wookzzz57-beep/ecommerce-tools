@@ -93,7 +93,7 @@ def run(args: argparse.Namespace) -> int:
         project,
         task_id,
         args.task,
-        args.accept or ["Agent exits successfully and reports verification evidence."],
+        args.accept or ["Agent process exits successfully."],
     )
     try:
         lane = choose_lane(
