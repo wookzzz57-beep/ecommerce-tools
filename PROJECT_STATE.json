@@ -16,8 +16,8 @@
   "launch_track": [],
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "FirstWindow v0.3.0 release is complete. Tag v0.3.0 points to 041a5b0efab0b3346895639f933104f19de55564. Tag CI 35365434160 PASS; Windows Release run 35365434006 PASS; Release 391602365 is published and Latest with FirstWindow-Windows-x64.exe and SHA256SUMS.txt. Vercel production firstwindow-public is Ready and https://firstwindow-public.vercel.app passed anonymous HTTP 200 verification via DoH-correct Vercel IPs with expected copy, canonical repo link, no legacy repo reference, and no Vercel Login redirect. Real Windows screenshot/GIF are merged. Next work must open/select a new issue and transition PROJECT_STATE before implementation.",
-  "last_verified_main_sha": "041a5b0efab0b3346895639f933104f19de55564",
+  "resume_point": "FirstWindow v0.3.0 is fully released and verified. Release v0.3.0 (id 391602365) contains FirstWindow-Windows-x64.exe and SHA256SUMS.txt. Final release-state merge c781364c85505332722530c9836c1d7f083d0466 passed main CI 35366146003 and Windows App 35366146006. Final Vercel deployment dpl_AoBn3KDXFfPRYNavRmXD2gLcUSTM is Production/Ready at https://firstwindow-public.vercel.app and anonymous black-box verification returned HTTP 200 with v0.3.0 text, working latest-download link, canonical repo, no legacy repo, and no Vercel Login redirect. v0.3 launch track is closed. Any new implementation must first select/open a new issue and transition PROJECT_STATE out of released state.",
+  "last_verified_main_sha": "c781364c85505332722530c9836c1d7f083d0466",
   "evidence": {
     "main_linux_ci_run": 35360016689,
     "main_linux_ci": "success",
@@ -65,7 +65,21 @@
     "release_exe_digest": "sha256:9b84edab66cdde0740223956203ec15a5393535e49ff32f3e960d74292b002f8",
     "release_checksum_asset_id": 572951818,
     "release_checksum_size": 95,
-    "release_checksum_digest": "sha256:c553622cf7423cdc7a1372b2a13ac8d70a8fef0bf16f918bcf3c7c0728c7bad8"
+    "release_checksum_digest": "sha256:c553622cf7423cdc7a1372b2a13ac8d70a8fef0bf16f918bcf3c7c0728c7bad8",
+    "release_state_merge_sha": "c781364c85505332722530c9836c1d7f083d0466",
+    "final_main_ci_run": 35366146003,
+    "final_main_ci": "success",
+    "final_main_windows_run": 35366146006,
+    "final_main_windows": "success",
+    "final_vercel_deployment_id": "dpl_AoBn3KDXFfPRYNavRmXD2gLcUSTM",
+    "final_vercel_status": "ready",
+    "final_vercel_url": "https://firstwindow-public.vercel.app",
+    "final_vercel_http_status": 200,
+    "final_vercel_version_check": "pass",
+    "final_vercel_download_check": "pass",
+    "final_vercel_repo_check": "pass",
+    "final_vercel_legacy_repo_check": "clear",
+    "final_vercel_login_redirect_check": "clear"
   },
   "external_blockers": [],
   "metadata_notes": [
