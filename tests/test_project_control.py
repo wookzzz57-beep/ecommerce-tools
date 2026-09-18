@@ -62,6 +62,65 @@ class ProjectControlTests(unittest.TestCase):
         failures = validate_project_state(state)
         self.assertTrue(any("wip_limit" in item for item in failures))
 
+    def test_released_state_allows_empty_engineering_queue(self):
+        state = {
+            "schema_version": 1,
+            "project": "FirstWindow",
+            "phase": "v0.3-released",
+            "status": "released",
+            "canonical_branch": "main",
+            "current_release": "v0.3.0",
+            "primary_objective": "Preserve the released baseline.",
+            "active_engineering_issue": None,
+            "engineering_queue": [],
+            "launch_track": [],
+            "wip_limit": 1,
+            "resume_point": "Open a new issue before new implementation.",
+            "last_verified_main_sha": "abc1234",
+            "external_blockers": [],
+        }
+        self.assertEqual(validate_project_state(state), [])
+
+    def test_released_state_rejects_active_queue(self):
+        state = {
+            "schema_version": 1,
+            "project": "FirstWindow",
+            "phase": "v0.3-released",
+            "status": "released",
+            "canonical_branch": "main",
+            "current_release": "v0.3.0",
+            "primary_objective": "Preserve the released baseline.",
+            "active_engineering_issue": 6,
+            "engineering_queue": [6],
+            "launch_track": [],
+            "wip_limit": 1,
+            "resume_point": "Release complete.",
+            "last_verified_main_sha": "abc1234",
+            "external_blockers": [],
+        }
+        failures = validate_project_state(state)
+        self.assertTrue(any("released state" in item for item in failures))
+
+    def test_released_state_rejects_external_blockers(self):
+        state = {
+            "schema_version": 1,
+            "project": "FirstWindow",
+            "phase": "v0.3-released",
+            "status": "released",
+            "canonical_branch": "main",
+            "current_release": "v0.3.0",
+            "primary_objective": "Preserve the released baseline.",
+            "active_engineering_issue": None,
+            "engineering_queue": [],
+            "launch_track": [],
+            "wip_limit": 1,
+            "resume_point": "Release complete.",
+            "last_verified_main_sha": "abc1234",
+            "external_blockers": ["release verification incomplete"],
+        }
+        failures = validate_project_state(state)
+        self.assertTrue(any("external_blockers" in item for item in failures))
+
 
 if __name__ == "__main__":
     unittest.main()
