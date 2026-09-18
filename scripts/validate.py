@@ -5,7 +5,7 @@ REQUIRED = [
     "README.md","LICENSE","AGENTS.md","pyproject.toml",
     "src/firstwindow/cli.py","src/firstwindow/gui.py","src/firstwindow/router.py",
     "src/firstwindow/durable.py","src/firstwindow/runners.py","src/firstwindow/bootstrap.py",
-    "src/firstwindow/system_status.py","src/firstwindow/onboarding.py","src/firstwindow/demo_project.py",
+    "src/firstwindow/system_status.py","src/firstwindow/onboarding.py","src/firstwindow/demo_project.py","src/firstwindow/windows_paths.py",
     "scripts/firstwindow_gui.py","site/index.html","site/app.js","site/styles.css",
     ".github/workflows/ci.yml",".github/workflows/windows-build.yml",
 ]
