@@ -21,7 +21,7 @@ class ProjectControlTests(unittest.TestCase):
             "launch_track": [6],
             "wip_limit": 1,
             "resume_point": "Start issue #4 from a fresh branch.",
-            "last_verified_main_sha": "abc123",
+            "last_verified_main_sha": "abc1234",
         }
         self.assertEqual(validate_project_state(state), [])
 
@@ -38,7 +38,7 @@ class ProjectControlTests(unittest.TestCase):
             "engineering_queue": [4],
             "launch_track": [6],
             "wip_limit": 1,
-            "last_verified_main_sha": "abc123",
+            "last_verified_main_sha": "abc1234",
         }
         failures = validate_project_state(state)
         self.assertTrue(any("resume_point" in item for item in failures))
@@ -57,7 +57,7 @@ class ProjectControlTests(unittest.TestCase):
             "launch_track": [6],
             "wip_limit": 2,
             "resume_point": "continue",
-            "last_verified_main_sha": "abc123",
+            "last_verified_main_sha": "abc1234",
         }
         failures = validate_project_state(state)
         self.assertTrue(any("wip_limit" in item for item in failures))
