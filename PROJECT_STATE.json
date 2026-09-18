@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "project": "FirstWindow",
-  "phase": "v0.3-distribution",
+  "phase": "v0.3-release-ready",
   "status": "active",
   "canonical_branch": "main",
   "current_release": "v0.2.0",
-  "primary_objective": "Ship a trustworthy beginner-facing v0.3 distribution: tag-driven releases, verifiable Windows artifacts, and Desktop-first Agnes/Hermes onboarding without weakening $0, durable resume, or deterministic acceptance.",
+  "primary_objective": "Close the v0.3 launch evidence loop: merge real Windows UI proof, establish a verifiable Vercel production deployment, create the v0.3.0 tag only after release gates pass, then verify real Release assets.",
   "active_engineering_issue": 6,
   "engineering_queue": [
     6
@@ -19,21 +19,36 @@
   ],
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Issue #6 distribution implementation is complete on branch v0.3-distribution-trust at d4ebb7a183d43c7281042b811ec0f71a30290ba6. Linux CI 35359739859 passed. Candidate version is 0.3.0 but no v0.3.0 tag has been created. Next: open PR, require Linux + Windows packaged self-test/checksum artifact, review diff, merge to main, re-verify main, then create v0.3.0 tag only if main remains green. After tag, verify the real Release contains EXE + SHA256SUMS.txt and matches package version.",
-  "last_verified_main_sha": "bd3967e57f38fc9c11254a435afaf2bf059e4fa5",
+  "resume_point": "Main v0.3 candidate is verified at 7aecc5ca2d45416e371a40724a91f7b9203cfd4d. Linux CI 35360016689 PASS; Windows run 35360016687 PASS; artifact 10553463139. Real-device EXE hash matched SHA256SUMS and self-test exited 0 on 260610pc1. Real PNG/GIF were captured and committed on launch-evidence at f9edb365b1f49cc9c17e12aa07597f351affdfec. Issue #6 was reopened because Release/Vercel gates are not complete. Vercel plugin is installed but returns teams: []; Vercel CLI login is waiting for user authorization. Next: complete Vercel login, deploy/verify production URL, merge launch-evidence, create v0.3.0 tag, verify tag release assets, then close #6.",
+  "last_verified_main_sha": "7aecc5ca2d45416e371a40724a91f7b9203cfd4d",
   "evidence": {
-    "distribution_linux_ci_run": 35359739859,
-    "distribution_linux_ci": "success",
-    "release_policy": "tests passed; real tag release not yet exercised",
-    "package_candidate_version": "0.3.0"
+    "main_linux_ci_run": 35360016689,
+    "main_linux_ci": "success",
+    "main_windows_run": 35360016687,
+    "main_windows": "success",
+    "main_windows_artifact_id": 10553463139,
+    "main_windows_artifact_digest": "sha256:6ce9ecfea9b476628ee75136a23ec91d41fb65f62b7935e7fd38ae74a89ed11b",
+    "real_device": "260610pc1",
+    "real_exe_sha256": "b431ae71b7dee91435215c844cfdf694aa3fad51fdb2218cc55d446107829575",
+    "real_checksum_match": true,
+    "real_packaged_self_test_exit": 0,
+    "real_screenshot": "docs/assets/firstwindow-window.png",
+    "real_startup_gif": "docs/assets/firstwindow-startup.gif",
+    "launch_evidence_commit": "f9edb365b1f49cc9c17e12aa07597f351affdfec",
+    "vercel_plugin_installed": true,
+    "vercel_plugin_visible_teams": [],
+    "vercel_cli_version": "59.23.1",
+    "vercel_cli_auth": "waiting_for_user_authorization"
   },
   "external_blockers": [
-    "Vercel scope was re-authorized by the user, but the current Vercel connector still returns 403 when reading the progress00116 project; treat website read-back verification as externally blocked until the connector can read it."
+    "Vercel CLI login requires one user authorization in the browser. Until that succeeds, production URL deployment/read-back remains blocked.",
+    "GitHub connector does not expose a tag/ref creation write tool; after all main/release gates pass, create v0.3.0 using an authenticated Git client or GitHub UI if no writable tag interface becomes available."
   ],
   "metadata_notes": [
     "Canonical repository is wookzzz57-beep/first-window.",
     "Repository description is updated.",
-    "User reports discovery topics were added; GitHub REST read-back currently returns an empty topics array, so re-check before launch promotion."
+    "GitHub REST still reports topics: []; verify discovery topics again before promotion.",
+    "Real UI assets are actual captures from the GitHub Actions-built main EXE on 260610pc1, not generated mockups."
   ],
   "release_gates": [
     "repository validation passes",
@@ -56,6 +71,6 @@
     "one primary engineering issue per implementation branch",
     "verified-complete tasks must not be resumed automatically"
   ],
-  "active_branch": "v0.3-distribution-trust",
-  "active_head": "d4ebb7a183d43c7281042b811ec0f71a30290ba6"
+  "active_branch": "launch-evidence",
+  "active_head": "f9edb365b1f49cc9c17e12aa07597f351affdfec"
 }
