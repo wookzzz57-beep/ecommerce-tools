@@ -3,7 +3,7 @@ name: Windows App
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, beginner-v0.2]
   workflow_dispatch:
 
 permissions:
