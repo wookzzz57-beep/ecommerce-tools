@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "firstwindow"
-version = "0.1.0"
+version = "0.2.0"
 description = "A free-first beginner launcher for coding agents with durable task state and verified completion."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,6 +13,7 @@ dependencies = []
 
 [project.scripts]
 firstwindow = "firstwindow.cli:main"
+firstwindow-gui = "firstwindow.gui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

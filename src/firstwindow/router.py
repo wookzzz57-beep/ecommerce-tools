@@ -3,9 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 import shutil
-from typing import Mapping
+from typing import Mapping, Any
+
+from .system_status import hermes_local_ready
 
 _TRUTHY = {"1", "true", "yes", "on"}
+
 
 @dataclass(frozen=True)
 class Lane:
@@ -14,35 +17,94 @@ class Lane:
     zero_cost: bool
     available: bool
     reason: str
+    provider: str | None = None
+    model: str | None = None
+
 
 def _truthy(value: str | None) -> bool:
     return (value or "").strip().lower() in _TRUTHY
 
+
 def command_exists(name: str) -> bool:
     return shutil.which(name) is not None
 
-def detect_lanes(env: Mapping[str, str] | None = None) -> list[Lane]:
+
+def detect_lanes(
+    env: Mapping[str, str] | None = None,
+    *,
+    hermes_model: Mapping[str, Any] | None = None,
+) -> list[Lane]:
     env = env or os.environ
     agnes = command_exists("agnes")
     hermes = command_exists("hermes")
-    ollama = command_exists("ollama")
     agnes_free = _truthy(env.get("FIRSTWINDOW_AGNES_FREE_CONFIRMED"))
-    hermes_local = _truthy(env.get("FIRSTWINDOW_HERMES_LOCAL_CONFIRMED"))
-    local_model = bool((env.get("FIRSTWINDOW_LOCAL_MODEL") or "").strip())
+
+    managed_local = hermes_local_ready(hermes_model or {})
+    manual_local = (
+        _truthy(env.get("FIRSTWINDOW_HERMES_LOCAL_CONFIRMED"))
+        and bool((env.get("FIRSTWINDOW_LOCAL_MODEL") or "").strip())
+    )
+    hermes_zero_ready = hermes and (managed_local or manual_local)
+
+    managed_model = ""
+    if hermes_model:
+        managed_model = str(
+            hermes_model.get("default") or hermes_model.get("model") or ""
+        ).strip()
+    manual_model = (env.get("FIRSTWINDOW_LOCAL_MODEL") or "").strip()
+
     return [
-        Lane("agnes-free", "agnes", True, agnes and agnes_free,
-             "Agnes detected; configured provider explicitly confirmed free." if agnes and agnes_free
-             else "Requires Agnes plus FIRSTWINDOW_AGNES_FREE_CONFIRMED=1."),
-        Lane("hermes-local", "hermes", True, hermes and ollama and hermes_local and local_model,
-             "Hermes + Ollama detected; local endpoint/model explicitly confirmed." if hermes and ollama and hermes_local and local_model
-             else "Requires Hermes, Ollama, FIRSTWINDOW_HERMES_LOCAL_CONFIRMED=1 and FIRSTWINDOW_LOCAL_MODEL."),
-        Lane("agnes-configured", "agnes", False, agnes,
-             "Uses the provider currently configured in Agnes; cost is not guaranteed to be $0."),
-        Lane("hermes-configured", "hermes", False, hermes,
-             "Uses the provider currently configured in Hermes; cost is not guaranteed to be $0."),
+        Lane(
+            name="agnes-free",
+            engine="agnes",
+            zero_cost=True,
+            available=agnes and agnes_free,
+            reason=(
+                "Agnes CLI detected and its configured provider is explicitly confirmed free."
+                if agnes and agnes_free
+                else "Requires Agnes CLI plus explicit free-provider confirmation."
+            ),
+        ),
+        Lane(
+            name="hermes-local",
+            engine="hermes",
+            zero_cost=True,
+            available=hermes_zero_ready,
+            reason=(
+                "Hermes managed Local Models runtime is selected."
+                if hermes and managed_local
+                else (
+                    "Hermes local endpoint/model explicitly confirmed."
+                    if hermes and manual_local
+                    else "Requires Hermes with a selected managed Local Model."
+                )
+            ),
+            provider="llamacpp" if managed_local else ("custom" if manual_local else None),
+            model=managed_model if managed_local else (manual_model or None),
+        ),
+        Lane(
+            name="agnes-configured",
+            engine="agnes",
+            zero_cost=False,
+            available=agnes,
+            reason="Uses the provider configured in Agnes; cost is not guaranteed to be $0.",
+        ),
+        Lane(
+            name="hermes-configured",
+            engine="hermes",
+            zero_cost=False,
+            available=hermes,
+            reason="Uses the provider configured in Hermes; cost is not guaranteed to be $0.",
+        ),
     ]
 
-def choose_lane(lanes: list[Lane], *, zero_cost: bool = True, preferred: str | None = None) -> Lane:
+
+def choose_lane(
+    lanes: list[Lane],
+    *,
+    zero_cost: bool = True,
+    preferred: str | None = None,
+) -> Lane:
     candidates = [lane for lane in lanes if lane.available and (lane.zero_cost or not zero_cost)]
     if preferred:
         for lane in candidates:
@@ -52,5 +114,7 @@ def choose_lane(lanes: list[Lane], *, zero_cost: bool = True, preferred: str | N
     if candidates:
         return candidates[0]
     if zero_cost:
-        raise RuntimeError("No verified $0 lane is ready. Run 'firstwindow doctor' and explicitly confirm a free/local provider.")
+        raise RuntimeError(
+            "No verified $0 lane is ready. Run 'firstwindow doctor' and complete the guided setup."
+        )
     raise RuntimeError("No supported Agnes or Hermes runtime was detected.")
