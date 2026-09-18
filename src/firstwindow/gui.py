@@ -8,9 +8,11 @@ import shutil
 import subprocess
 import threading
 import uuid
+import webbrowser
 
 from .bootstrap import install_command
 from .demo_project import create_demo_project
+from .distribution import beginner_setup_action
 from .durable import append_evidence, create_task, write_checkpoint
 from .onboarding import BeginnerState, recommend_next_action
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
@@ -68,9 +70,15 @@ def main() -> int:
             buttons.pack(fill="x", pady=(12, 0))
             ttk.Button(buttons, text="Diagnose", command=self.refresh).pack(side="left")
             ttk.Button(buttons, text="Set Up $0 Path", command=self.setup_zero_path).pack(side="left", padx=8)
-            ttk.Button(buttons, text="Install Agnes", command=lambda: self.install("agnes")).pack(side="left", padx=8)
-            ttk.Button(buttons, text="Install Hermes", command=lambda: self.install("hermes")).pack(side="left")
+            ttk.Button(buttons, text="Get Agnes Desktop", command=lambda: self.open_beginner_setup("agnes")).pack(side="left", padx=8)
+            ttk.Button(buttons, text="Get Hermes Desktop", command=lambda: self.open_beginner_setup("hermes")).pack(side="left")
             ttk.Button(buttons, text="Hermes Local Models", command=self.open_hermes).pack(side="left", padx=8)
+
+            advanced = ttk.Frame(status)
+            advanced.pack(fill="x", pady=(8, 0))
+            ttk.Label(advanced, text="Advanced CLI fallback:").pack(side="left")
+            ttk.Button(advanced, text="Agnes CLI", command=lambda: self.install("agnes")).pack(side="left", padx=8)
+            ttk.Button(advanced, text="Hermes CLI", command=lambda: self.install("hermes")).pack(side="left")
 
             project_box = ttk.LabelFrame(outer, text="2. Choose a project", padding=14)
             project_box.pack(fill="x", pady=14)
@@ -158,7 +166,7 @@ def main() -> int:
             action = recommend_next_action(state)
             self.next_var.set({
                 "ready": "Ready. Choose a project and press Start Building.",
-                "install": "No runtime detected. “Set Up $0 Path” installs Hermes using its official installer.",
+                "install": "No runtime detected. “Set Up $0 Path” opens the official Hermes Desktop download page.",
                 "configure": "Runtime detected. Finish one-time free/local model setup, then Diagnose again.",
             }[action])
             self.refresh_resume()
@@ -203,6 +211,20 @@ def main() -> int:
         def _creation_flags(self) -> int:
             return subprocess.CREATE_NEW_CONSOLE if os.name == "nt" else 0
 
+        def open_beginner_setup(self, target: str) -> None:
+            try:
+                action = beginner_setup_action(target)
+                opened = webbrowser.open(action.target)
+            except Exception as exc:
+                messagebox.showerror("Setup", str(exc))
+                return
+            self._append(f"Opened official {target.title()} Desktop setup page: {action.target}")
+            if not opened:
+                messagebox.showinfo(
+                    "Open official setup page",
+                    f"Your browser did not confirm opening the page. Open this official URL manually:\n\n{action.target}",
+                )
+
         def install(self, target: str) -> None:
             try:
                 command = install_command(platform.system(), target)
@@ -234,7 +256,11 @@ def main() -> int:
         def setup_zero_path(self) -> None:
             state, _model = self._state()
             if not state.hermes_installed:
-                self.install("hermes")
+                self.open_beginner_setup("hermes")
+                messagebox.showinfo(
+                    "Install Hermes Desktop",
+                    "Download and run the official Hermes Desktop installer. After installation, open Hermes and finish the Local Models setup, then return to FirstWindow and press Diagnose.\n\nThe PowerShell CLI installer remains available under Advanced CLI fallback.",
+                )
                 return
             if not state.hermes_local_ready:
                 self.open_hermes()

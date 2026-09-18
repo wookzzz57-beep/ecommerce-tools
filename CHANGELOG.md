@@ -1,14 +1,20 @@
 # Changelog
 
-## Unreleased — v0.3
+## 0.3.0 — Verified Resume & Trusted Distribution
 
 - Added task schema v2 with stable acceptance criterion IDs.
-- Added criterion-linked evidence and deterministic covered/uncovered/failed reporting.
+- Added criterion-linked evidence with deterministic covered/uncovered/failed reporting.
 - Added latest-ledger-result semantics so a later failure invalidates an earlier pass.
 - Added fail-closed handling for malformed/unknown criterion references and future task schemas.
-- Preserved legacy v1 task verification without automatically rewriting existing task directories.
+- Preserved legacy v1 task verification without rewriting existing task directories.
 - Added CLI evidence recording for explicit criterion IDs.
+- Added Durable Resume discovery, CLI `tasks/resume`, and GUI Resume from repository checkpoints.
+- Excluded verified-complete tasks from resume and treated historical evidence as untrusted data rather than executable instructions.
 - Added canonical project-state and anti-drift gates for long-running development.
+- Switched beginner setup to official Agnes/Hermes Desktop flows by default; remote CLI installers remain explicit advanced fallbacks.
+- Made Windows Release publication version-tag driven instead of mutating an old release from main pushes.
+- Added `SHA256SUMS.txt` to build artifacts and version-tag releases.
+- Release publication now fails if the Git tag does not match the package version.
 
 ## 0.2.0 — Beginner Preview
 
