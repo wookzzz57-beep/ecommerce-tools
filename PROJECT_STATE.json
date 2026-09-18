@@ -8,7 +8,7 @@
   "primary_objective": "Strengthen verified completion and durable recovery while preserving the beginner-first $0 experience and keeping Agnes/Hermes as execution engines.",
   "active_engineering_issue": 5,
   "active_branch": "v0.3-durable-resume",
-  "active_head": "b3a9acd4c121df9c244491761e80e911a31ed522",
+  "active_head": "59a25d50cc1805ea20d46f515c626a8156d43e6b",
   "engineering_queue": [
     5
   ],
@@ -20,16 +20,16 @@
   ],
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Issue #5 implementation is complete on branch v0.3-durable-resume. Linux CI and Windows packaging/self-test passed for head b3a9acd4c121df9c244491761e80e911a31ed522. Next: review diff, open PR to main, merge only if PR checks stay green, then verify main, close #5, and transition PROJECT_STATE so #6 becomes the next active track.",
+  "resume_point": "Issue #5 Durable Resume is implementation-complete on branch v0.3-durable-resume. Final code head 59a25d50cc1805ea20d46f515c626a8156d43e6b passed Linux CI and Windows packaging/self-test. Resume evidence is explicitly treated as untrusted historical data. Next: open PR to main, merge only with green PR checks, verify main, close #5, then transition PROJECT_STATE before starting #6.",
   "last_verified_main_sha": "8fd2d24481149d6b68d935631ee463d06de97f55",
   "evidence": {
-    "linux_ci_run": 35358215699,
+    "linux_ci_run": 35358622843,
     "linux_ci": "success",
-    "windows_run": 35358215318,
+    "windows_run": 35358622744,
     "windows_build": "success",
     "packaged_self_test": "success",
-    "windows_artifact_id": 10553435840,
-    "windows_artifact_digest": "sha256:a23f72836396ce393ea01d59c614aefb5dda1401e17da4ded20f1209eebf402a"
+    "windows_artifact_id": 10554065413,
+    "windows_artifact_digest": "sha256:2f7102a3bde887fa9e95de0206f46c3dd9d9f708596973ff21001e3d63e09300"
   },
   "external_blockers": [
     "Vercel scope was re-authorized by the user, but the current Vercel connector still returns 403 when reading the progress00116 project; treat website read-back verification as externally blocked until the connector can read it."
