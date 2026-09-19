@@ -276,8 +276,16 @@ def read_firstwindow_agnes_route(
 def ensure_firstwindow_agnes_profile(
     *,
     runner: Callable[..., Any] = subprocess.run,
+    which: Callable[[str], str | None] = shutil.which,
     recreate: bool = False,
 ) -> ProfileSetupResult:
+    if which("hermes") is None:
+        route = HermesAgnesRoute(
+            False, False, False, False, False, None, None, None, None,
+            "hermes-not-installed",
+        )
+        return ProfileSetupResult(False, False, None, "hermes-not-installed", route)
+
     existing = find_firstwindow_profile(runner=runner)
     created = False
 
@@ -288,7 +296,7 @@ def ensure_firstwindow_agnes_profile(
             timeout=45,
         )
         if int(getattr(deleted, "returncode", 1)) != 0:
-            route = read_hermes_agnes_route(existing, runner=runner)
+            route = read_hermes_agnes_route(existing, which=which, runner=runner)
             return ProfileSetupResult(False, False, existing, "profile-delete-failed", route)
         existing = None
 
@@ -338,13 +346,13 @@ def ensure_firstwindow_agnes_profile(
                 timeout=20,
             )
         except (OSError, subprocess.SubprocessError):
-            route = read_hermes_agnes_route(existing, runner=runner)
+            route = read_hermes_agnes_route(existing, which=which, runner=runner)
             return ProfileSetupResult(False, created, existing, f"config-set-error:{key}", route)
         if int(getattr(completed, "returncode", 1)) != 0:
-            route = read_hermes_agnes_route(existing, runner=runner)
+            route = read_hermes_agnes_route(existing, which=which, runner=runner)
             return ProfileSetupResult(False, created, existing, f"config-set-failed:{key}", route)
 
-    route = read_hermes_agnes_route(existing, runner=runner)
+    route = read_hermes_agnes_route(existing, which=which, runner=runner)
     return ProfileSetupResult(route.ready, created, existing, route.reason, route)
 
 

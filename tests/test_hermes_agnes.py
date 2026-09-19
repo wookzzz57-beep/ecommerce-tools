@@ -122,6 +122,12 @@ class HermesAgnesTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 save_agnes_api_key(Path(tmp), "bad\nkey")
 
+    def test_profile_setup_fails_closed_when_hermes_is_missing(self):
+        result = ensure_firstwindow_agnes_profile(which=lambda _name: None)
+        self.assertFalse(result.ready)
+        self.assertEqual(result.reason, "hermes-not-installed")
+        self.assertFalse(result.route.hermes_installed)
+
     def test_profile_setup_creates_blank_profile_and_never_passes_secret_value(self):
         calls = []
         show_count = 0
@@ -152,7 +158,10 @@ class HermesAgnesTests(unittest.TestCase):
                 return done(stdout=json.dumps(values[key]))
             return done()
 
-        result = ensure_firstwindow_agnes_profile(runner=runner)
+        result = ensure_firstwindow_agnes_profile(
+            runner=runner,
+            which=lambda name: "hermes" if name == "hermes" else None,
+        )
         self.assertTrue(result.ready)
         self.assertTrue(result.created)
         flattened = "\n".join(" ".join(command) for command, _env in calls)
