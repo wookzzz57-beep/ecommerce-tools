@@ -1,22 +1,21 @@
 {
   "schema_version": 1,
   "project": "FirstWindow",
-  "phase": "v0.4.1-public-site-truth-hotfix",
-  "status": "active",
+  "phase": "v0.4.1-post-release-launch",
+  "status": "post-release",
   "canonical_branch": "main",
   "current_release": "v0.4.1",
-  "primary_objective": "Resolve issue #25 only: align the public site and production deployment with the verified v0.4.1 release truth, then resume the launch loop.",
-  "active_engineering_issue": 25,
-  "engineering_queue": [
-    25
-  ],
+  "primary_objective": "Operate the post-release launch evidence loop from the verified v0.4.1 baseline; keep product engineering frozen unless real-user evidence promotes one scoped issue.",
+  "active_engineering_issue": null,
+  "engineering_queue": [],
   "completed_engineering_issues": [
     4,
     5,
     6,
     16,
     19,
-    22
+    22,
+    25
   ],
   "launch_track": [
     17
@@ -32,17 +31,17 @@
       "id": "EXP-001",
       "issue": 17,
       "channel": "Hacker News / Show HN",
-      "status": "paused-for-public-site-release-truth",
+      "status": "ready-for-reconciliation-or-publish",
       "published_url": null,
       "product_baseline_frozen": true,
-      "engineering_wip": 1,
-      "next_action": "Resume EXP-001 only after issue #25 is merged, production firstwindow-public is redeployed, and public release-surface acceptance is independently verified."
+      "engineering_wip": 0,
+      "next_action": "Reconcile any already-published Show HN item URL/time into issue #17; if none exists, publish only EXP-001. Do not open a second channel before recording its result/decision."
     }
   },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Issue #25 is the only engineering WIP. Fix stale public-site v0.3.0 copy and malformed Hermes/Agnes demo wording, strengthen release-surface regression tests, require PR + main CI/Windows gates, deploy verified main to progress00116/firstwindow-public, independently verify production, then close #25 and resume EXP-001.",
-  "last_verified_main_sha": "a926ee3799bf3288cce45fced968ae19efbfc3a3",
+  "resume_point": "Issue #25 is accepted. Production firstwindow-public is verified on v0.4.1 with Hermes Agent / Agnes API copy, correct router demo, latest EXE download, and no v0.3.0 residue. Engineering WIP is zero. Resume issue #17 / EXP-001 with reconciliation-first handling for any already-published Show HN item.",
+  "last_verified_main_sha": "38a489cc929cf109c8fe17df6a7803d5ab715d24",
   "evidence": {
     "main_linux_ci_run": 35438404706,
     "main_linux_ci": "success",
@@ -342,18 +341,66 @@
       "main_ci": "success",
       "main_windows_run": 35447144187,
       "main_windows": "success"
+    },
+    "issue_25": {
+      "status": "production-accepted",
+      "issue": 25,
+      "pr_release_surface": 26,
+      "pr26_final_head_sha": "9bacade908446e9d7851a2e17fd4ed5e86de8e32",
+      "pr26_ci_run": 35451915021,
+      "pr26_ci": "success",
+      "pr26_windows_run": 35451915009,
+      "pr26_windows": "success",
+      "pr26_merge_sha": "a057d3ea9184512bbd49fabc0795fed5fe49edd6",
+      "pr26_main_ci_run": 35451970184,
+      "pr26_main_ci": "success",
+      "pr26_main_windows_run": 35451970183,
+      "pr26_main_windows": "success",
+      "failed_production_deployment_id": "dpl_FSe6x1pZHSaovU5oH8igYdevNApb",
+      "failed_production_symptom": "root / returned 404 while /site/index, /site/index.html, /styles.css and /app.js returned 200",
+      "rollback_target_deployment_id": "dpl_AoBn3KDXFfPRYNavRmXD2gLcUSTM",
+      "rollback_result": "success; canonical alias restored to HTTP 200",
+      "root_rewrite_fix": "/site/index.html -> /site/index with cleanUrls=true",
+      "local_vercel_dev_verification": "pass",
+      "pr_root_rewrite": 27,
+      "pr27_final_head_sha": "a66e03a7f865140936d0bd967875dc5cdaa1f9be",
+      "pr27_ci_run": 35452519211,
+      "pr27_ci": "success",
+      "pr27_windows_run": 35452519193,
+      "pr27_windows": "success",
+      "pr27_merge_sha": "38a489cc929cf109c8fe17df6a7803d5ab715d24",
+      "pr27_main_ci_run": 35452595076,
+      "pr27_main_ci": "success",
+      "pr27_main_windows_run": 35452595067,
+      "pr27_main_windows": "success",
+      "final_production_deployment_id": "dpl_DrpXLsYWiEpxY1dq6yTQAdFkYxDE",
+      "final_production_deployment_url": "https://firstwindow-public-iezrtzn13-progress00116.vercel.app",
+      "final_production_alias": "https://firstwindow-public.vercel.app",
+      "final_promote": "success",
+      "final_http_status": 200,
+      "final_firstwindow_copy": true,
+      "final_v0_4_1": true,
+      "final_v0_3_0_present": false,
+      "final_hermes_agent_copy": true,
+      "final_agnes_api_copy": true,
+      "final_latest_release_link": true,
+      "final_latest_download_link": true,
+      "final_router_copy": "Hermes Agent via Agnes API",
+      "final_router_malformed_copy_present": false,
+      "latest_exe_head_http": 200,
+      "latest_exe_content_length": 11631665,
+      "verification_device": "LAPTOP-RF3RT9HP"
     }
   },
-  "external_blockers": [
-    "Production firstwindow-public is stale until issue #25 is merged and the existing Vercel project is redeployed/verified."
-  ],
+  "external_blockers": [],
   "metadata_notes": [
     "Canonical repository is wookzzz57-beep/first-window.",
     "Repository description is updated.",
     "Real UI assets are actual captures from the GitHub Actions-built Windows EXE, not generated mockups.",
     "v0.4.1 is the verified released baseline; product engineering remains frozen during post-release launch experiments.",
     "Public production URL: https://firstwindow-public.vercel.app",
-    "Post-release launch evidence informs issue promotion; it does not directly mutate product scope."
+    "Post-release launch evidence informs issue promotion; it does not directly mutate product scope.",
+    "v0.4.1 public site release truth and canonical production deployment were independently verified after issue #25; production root rewrite uses /site/index with cleanUrls=true."
   ],
   "release_gates": [
     "repository validation passes",
