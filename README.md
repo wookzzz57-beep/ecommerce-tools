@@ -1,107 +1,161 @@
 # FirstWindow
 
-> **Your first coding agent. One window. A verified $0 path. No surprise API bill.**
+<p align="center">
+  <strong>Your first coding agent for Windows.</strong><br>
+  One window. Hermes execution. A fail-closed $0 path. Durable resume. Evidence before “done”.
+</p>
 
-FirstWindow is a beginner-first Windows launcher with **Hermes Agent as the primary executor**.
+<p align="center">
+  <a href="https://github.com/wookzzz57-beep/first-window/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/wookzzz57-beep/first-window"></a>
+  <a href="https://github.com/wookzzz57-beep/first-window/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/wookzzz57-beep/first-window/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/wookzzz57-beep/first-window/actions/workflows/windows-build.yml"><img alt="Windows App" src="https://github.com/wookzzz57-beep/first-window/actions/workflows/windows-build.yml/badge.svg?branch=main"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+</p>
 
-The primary cloud path is:
+<p align="center">
+  <a href="https://github.com/wookzzz57-beep/first-window/releases/latest/download/FirstWindow-Windows-x64.exe"><strong>Download Windows</strong></a>
+  ·
+  <a href="https://firstwindow-public.vercel.app">Website</a>
+  ·
+  <a href="docs/BEGINNER.md">Beginner Guide</a>
+  ·
+  <a href="https://github.com/wookzzz57-beep/first-window/releases/latest">Release Notes</a>
+</p>
+
+FirstWindow is a beginner-first Windows launcher for coding agents. It keeps the user-facing workflow small while putting **Hermes Agent** underneath as the executor.
+
+The verified cloud path is:
 
 ```text
-FirstWindow control + durable state
-        ↓
-Hermes Agent
-        ↓
-Agnes API
+FirstWindow
+  └─ Hermes Agent
+       └─ Agnes API
 ```
 
-Direct Agnes CLI is **not** a beginner-path dependency. It remains an explicit advanced/manual fallback only.
+A ready **Hermes Managed Local** model can be used as the local lane. If no verified free/local route is ready, FirstWindow **blocks instead of silently falling back to paid or unknown-cost inference**.
 
-[Download Windows](../../releases/latest/download/FirstWindow-Windows-x64.exe) · [Beginner Guide](docs/BEGINNER.md)
+> Direct Agnes CLI is not required for the beginner path. It remains an explicit advanced/manual option.
 
-## Real Windows demo
+## See it running
 
-The GIF below is a real capture of the **v0.4 Windows app**, showing live **English ↔ 简体中文** switching. It is not a mockup or generated UI.
+This is a real capture of the **v0.4.1 Windows app**, including live **English ↔ 简体中文** switching. It is not a generated mockup.
 
-![FirstWindow English and Simplified Chinese language switch demo](docs/assets/firstwindow-startup.gif)
+![FirstWindow real Windows bilingual demo](docs/assets/firstwindow-startup.gif)
 
-[Open the earlier full-size v0.3 reference screenshot](docs/assets/firstwindow-window.png)
+## Why FirstWindow exists
+
+Coding agents are powerful, but the first-run experience can still require users to understand providers, API billing, terminals, local models, recovery state, and whether “done” actually means the task is correct.
+
+FirstWindow concentrates those concerns into one guarded workflow:
+
+| Problem | FirstWindow behavior |
+| --- | --- |
+| “Which provider will this use, and can it cost money?” | **Fail closed.** Unknown-cost routes are blocked. |
+| “The agent stopped halfway through.” | **Durable task + checkpoint + resume state.** |
+| “The agent said done. Is the result actually correct?” | **Evidence-based acceptance.** Executor success alone is not verification. |
+| “I do not want my other provider keys leaking into this setup.” | **Isolated Hermes profile** with explicit credential boundaries. |
+| “I just want to start from Windows.” | **GUI-first beginner flow** with English / 简体中文 switching. |
+
+## Start in a few steps
+
+1. Download **[FirstWindow-Windows-x64.exe](https://github.com/wookzzz57-beep/first-window/releases/latest/download/FirstWindow-Windows-x64.exe)** and **[SHA256SUMS.txt](https://github.com/wookzzz57-beep/first-window/releases/latest/download/SHA256SUMS.txt)**.
+2. Open FirstWindow and choose **English** or **简体中文**.
+3. Press **Make Me Ready / 一键就绪**. FirstWindow verifies the exact route before Start/Resume is enabled.
+4. Choose a project folder, describe the task, and press **Start Building**.
+
+The community EXE is currently **unsigned**, so Windows SmartScreen may show an unknown-publisher warning. Verify the downloaded EXE against `SHA256SUMS.txt`.
+
+Full setup details: **[Beginner Guide](docs/BEGINNER.md)**.
+
+## What is verified in v0.4.1
+
+The current released baseline has been checked beyond “the build succeeded”:
+
+- real **Hermes Agent → Agnes API** readiness and task execution on Windows
+- credential-bound route proof and provider/model usage attestation
+- fail-closed behavior when a verified free/local route is unavailable
+- packaged Windows EXE self-test and bilingual UI self-test
+- independent Release EXE ↔ `SHA256SUMS.txt` verification
+- durable task/checkpoint/evidence flow
+- independent acceptance gate: agent exit 0 does **not** automatically mean VERIFIED
+
+**Managed Local note:** the routing/readiness path is supported when a validated local model is ready. The current release does not claim a completed real-device Managed Local inference E2E on the validation machine.
 
 ## Execution architecture
 
-FirstWindow owns routing, checkpoints, evidence, resume state, and final verification. Hermes owns agent execution.
-
 ```text
-1. Agnes API via isolated Hermes profile
-   └─ only after explicit $0 confirmation + live probe + usage attestation
-
-2. Hermes Managed Local
-   └─ local fallback when a validated local model is ready
-
-3. BLOCK
-   └─ no silent paid/cloud fallback
+                    ┌─────────────────────────────┐
+                    │         FirstWindow         │
+                    │ onboarding · routing ·      │
+                    │ checkpoints · evidence      │
+                    └──────────────┬──────────────┘
+                                   │
+                            Hermes Agent
+                          ┌────────┴────────┐
+                          │                 │
+                     Agnes API       Managed Local
+                    cloud lane       local lane
+                          │                 │
+                          └────────┬────────┘
+                                   │
+                         checkpoint + evidence
+                                   │
+                              VERIFIED?
 ```
 
-The Agnes profile is named `firstwindowzero`. FirstWindow creates it **blank** instead of cloning the default Hermes profile, configures the official Agnes API endpoint/model, and forces `fallback_providers=[]`.
+FirstWindow owns the control surface and acceptance state. Hermes owns agent execution.
 
-If an Agnes API key is missing, Make Me Ready asks the user to paste it explicitly. Only `AGNES_API_KEY` is written to the isolated profile; FirstWindow never copies OpenAI, DeepSeek, OpenRouter, or other credentials from the user's default Hermes profile.
+For the Agnes route, FirstWindow creates an isolated Hermes profile named `firstwindowzero`, disables fallback providers, requires explicit free-route confirmation, runs a live readiness probe, and validates usage evidence against the expected provider/model.
 
-## Windows beginner path
+Changing or removing the Agnes credential invalidates the old route proof.
 
-Open the EXE and use:
+## “Done” is not proof
 
-```text
-Choose Language → Make Me Ready → Choose Folder → Describe Task → Start Building
-```
-
-**Make Me Ready / 一键就绪** does the deterministic work:
-
-- installs Hermes through the official installer only after explicit confirmation
-- creates/repairs the isolated `firstwindowzero` profile
-- disables Hermes fallback providers for the Agnes $0 route
-- requests the Agnes API key only when that isolated profile has none
-- requires the user to confirm the current Agnes account/API-key route is free
-- binds that confirmation and live proof to the current credential; removing or changing the key invalidates the old proof
-- uses an already-ready Hermes Managed Local lane without forcing Agnes credential entry
-- runs a real readiness prompt and requires `FIRSTWINDOW_READY`
-- validates Hermes usage evidence against the expected Agnes model/provider
-- refuses Start/Resume unless the exact route fingerprint has passed the live probe
-FirstWindow also pins Hermes tool execution to the selected project using process cwd, `--in`, `--no-restore-cwd`, and `TERMINAL_CWD`. This protects older Hermes one-shot builds that could otherwise execute file tools in a stale/home workspace.
-
-If any prerequisite, installer, API call, provider attestation, model check, or route proof fails, FirstWindow stays blocked.
-
-## Durable tasks: done is not proof
-
-Each task stores durable state under the selected project:
+Each task stores repository-local durable state under `.firstwindow/tasks/<task_id>/`, including:
 
 - objective and acceptance criteria
-- checkpoint + next action
+- checkpoint and next action
 - append-only evidence
-- Hermes usage attestation
+- execution/provider attestation
 - resume context
 
-Default tasks deliberately separate two facts:
+The default beginner task separates:
 
 - **AC-001** — the agent process completed through the verified execution route
 - **AC-002** — the requested task outcome was independently verified
 
-A successful Hermes/Agnes run covers AC-001 only. `firstwindow verify` remains **NOT VERIFIED** until independent evidence covers AC-002. An agent saying “done” or exiting with code 0 is not sufficient by itself.
+A successful agent run can cover AC-001. It cannot cover AC-002 just by saying “done”.
 
-## Windows features
+```text
+Agent finished
+    ↓
+AC-001 covered
+    ↓
+Independent check required
+    ↓
+AC-002 covered
+    ↓
+VERIFIED
+```
 
-- English / 简体中文 live language switching with persisted preference
+## Core features
+
+- Windows GUI-first workflow
+- English / 简体中文 live switching
 - Diagnose
 - Make Me Ready / 一键就绪
-- Automatic / Agnes API via Hermes / Hermes Local routing
-- Create Demo
-- Choose Folder
-- Start Building
-- Resume from durable checkpoint
-- live execution output and evidence ledger
-- fail-closed $0 guard
-- Advanced CLI fallback for explicit/manual use only
+- Hermes Agent → Agnes API cloud lane
+- Hermes Managed Local lane when a validated model is ready
+- strict no-silent-fallback $0 guard
+- isolated FirstWindow Hermes profile
+- real readiness probe + usage attestation
+- project-directory pinning
+- durable checkpoints and Resume
+- evidence ledger and acceptance coverage
+- packaged Windows x64 EXE + SHA-256 checksum
 
-The community Windows binary may be unsigned, so SmartScreen can show an unknown-publisher warning. Verify the EXE against `SHA256SUMS.txt` from the same Release.
-## Python install
+<details>
+<summary><strong>Install from source</strong></summary>
 
 ```bash
 python -m venv .venv
@@ -117,14 +171,16 @@ firstwindow doctor
 firstwindow-gui
 ```
 
-Useful CLI commands:
+</details>
+
+<details>
+<summary><strong>Advanced CLI examples</strong></summary>
 
 ```bash
 firstwindow setup
 firstwindow setup --install hermes --yes
 firstwindow demo
 
-# Custom acceptance criteria require explicit evidence for each criterion.
 firstwindow run "Add a /health endpoint and test it" \
   --accept "tests pass" \
   --accept "GET /health returns 200"
@@ -136,8 +192,31 @@ firstwindow evidence <task_id> --criterion AC-002 --kind probe --detail "GET /he
 firstwindow verify <task_id>
 ```
 
-## Security boundaries
+</details>
 
-FirstWindow does not silently choose an unknown-cost provider, clone a user's general Hermes credentials, treat configuration as readiness, or treat executor success as task completion.
+## Security and cost boundaries
 
-The product goal is a small beginner surface backed by fail-closed routing, explicit credential/cost boundaries, real execution probes, durable recovery, and evidence-based acceptance.
+FirstWindow intentionally does **not**:
+
+- silently choose an unknown-cost provider
+- clone a user's general Hermes provider credentials into its isolated profile
+- treat configuration as proof of readiness
+- treat agent exit 0 as proof of task completion
+- silently switch providers after Agnes authentication fails
+- claim Managed Local inference was verified when a validated local model was not available
+
+See **[docs/BEGINNER.md](docs/BEGINNER.md)** for the full credential, route, and verification flow.
+
+## Feedback and community
+
+FirstWindow is still early. The most useful feedback is concrete: where onboarding was confusing, what failed on a real Windows machine, and which check prevented or missed a bad outcome.
+
+- **Bug or setup problem:** [Open an issue](https://github.com/wookzzz57-beep/first-window/issues/new)
+- **Questions / ideas:** [GitHub Discussions](https://github.com/wookzzz57-beep/first-window/discussions)
+- **Latest binary:** [GitHub Releases](https://github.com/wookzzz57-beep/first-window/releases/latest)
+
+If FirstWindow is useful to you—or you want to follow the experiment—**star the repository**. It helps other beginner agent users discover the project.
+
+## License
+
+MIT.

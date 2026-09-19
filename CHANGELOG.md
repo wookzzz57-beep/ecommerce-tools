@@ -1,12 +1,12 @@
 # Changelog
 
-## 0.4.1 ? Readiness Truth & Release Surface Hardening
+## 0.4.1 — Readiness Truth & Release Surface Hardening
 
 - Bind Agnes live-route proof to the currently present API credential and invalidate stale proof when the key disappears or changes.
 - Let an already-ready Hermes Managed Local lane proceed without forcing Agnes credential entry.
 - Keep Resume disabled until both a resumable task and an exact live-probe route proof exist.
 - Fix empty environment mappings so isolation helpers never silently inherit process credentials or routing flags.
-- Prevent an ambient process-level `AGNES_API_KEY` from overriding the credential stored in FirstWindow?s isolated Hermes profile.
+- Prevent an ambient process-level `AGNES_API_KEY` from overriding the credential stored in FirstWindow’s isolated Hermes profile.
 - Update README and public site to the released Hermes-first architecture and remove hard-coded stale release labels.
 
 ## 0.4.0 — Hermes-First Agnes API Execution
