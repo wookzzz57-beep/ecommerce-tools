@@ -34,7 +34,10 @@ class ReleaseSurfaceTests(unittest.TestCase):
         readme = Path("README.md").read_text(encoding="utf-8")
         self.assertNotIn("v0.4 Windows candidate", readme)
         self.assertNotIn("released v0.3 package until v0.4", readme)
-        self.assertIn("v0.4 Windows app", readme)
+        self.assertIn("v0.4.1 Windows app", readme)
+        self.assertIn("Your first coding agent for Windows", readme)
+        self.assertIn("Hermes Agent", readme)
+        self.assertIn("Agnes API", readme)
 
 
 if __name__ == "__main__":
