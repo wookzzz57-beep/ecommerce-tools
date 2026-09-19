@@ -20,11 +20,12 @@ Direct Agnes CLI is **not** a beginner-path dependency. It remains an explicit a
 
 ## Real Windows demo
 
-This is a real capture of the packaged Windows app, not a generated mockup.
+The GIF below is a real capture of the current **v0.4 Windows candidate** from PR #20, showing live **English ↔ 简体中文** switching. It is not a mockup or generated UI. The full-size screenshot below remains the released v0.3 package until v0.4 clears the remote release gates.
 
-![FirstWindow startup demo](docs/assets/firstwindow-startup.gif)
+![FirstWindow English and Simplified Chinese language switch demo](docs/assets/firstwindow-startup.gif)
 
-[Open the full-size real app screenshot](docs/assets/firstwindow-window.png)
+[Open the full-size released v0.3 app screenshot](docs/assets/firstwindow-window.png)
+
 ## Execution architecture
 
 FirstWindow owns routing, checkpoints, evidence, resume state, and final verification. Hermes owns agent execution.
