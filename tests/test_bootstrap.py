@@ -81,6 +81,15 @@ class BootstrapTests(unittest.TestCase):
         self.assertTrue(any(path.endswith("/hermes/bin") for path in normalized))
         self.assertTrue(any(path.endswith("/hermes/hermes-agent/venv/scripts") for path in normalized))
 
+    def test_windows_agnes_path_refresh_candidate_matches_official_installer(self):
+        paths = runtime_path_candidates(
+            "windows",
+            "agnes",
+            {"LOCALAPPDATA": r"C:\\Users\\demo\\AppData\\Local"},
+        )
+        normalized = [str(path).replace("\\", "/").lower() for path in paths]
+        self.assertEqual(normalized, ["c:/users/demo/appdata/local/agnes/bin"])
+
 
 if __name__ == "__main__":
     unittest.main()

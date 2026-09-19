@@ -15,7 +15,7 @@ from .durable import append_evidence, create_task, verification_report, write_ch
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import Lane, choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command, run_command
-from .system_status import read_hermes_model
+from .system_status import read_agnes_capabilities, read_hermes_model
 
 
 def _project(value: str) -> Path:
@@ -26,7 +26,11 @@ def _project(value: str) -> Path:
 
 
 def _lanes(env: dict[str, str] | None = None):
-    return detect_lanes(env or os.environ, hermes_model=read_hermes_model())
+    return detect_lanes(
+        env or os.environ,
+        hermes_model=read_hermes_model(),
+        agnes_capabilities=read_agnes_capabilities(),
+    )
 
 
 def _agent_command(
@@ -42,7 +46,14 @@ def _agent_command(
     model = lane.model or model_arg or ""
     if not model:
         raise RuntimeError("No local Hermes model is selected.")
-    return hermes_command(project, task_id, prompt, model, provider=lane.provider)
+    return hermes_command(
+        project,
+        task_id,
+        prompt,
+        model,
+        provider=lane.provider,
+        isolate_user_config=bool(lane.zero_cost),
+    )
 
 
 def _default_exit_criterion(context: dict) -> list[str] | None:

@@ -35,12 +35,12 @@ The primary beginner path remains **Make Me Ready / 一键就绪**.
 
 Use **Get Agnes Desktop** to open the official Agnes Code installation page, or use the explicit **Agnes CLI** fallback. Complete Agnes sign-in and choose a route that is free for your account.
 
-Agnes documents free built-in/free-tier options, but it also supports paid providers. FirstWindow therefore does **not** infer cost from the Agnes executable or model name. Check **I confirmed my Agnes provider is free** only after verifying that fact for the active route.
+Agnes documents free built-in/free-tier options, but it also supports paid providers. FirstWindow therefore does **not** infer cost from the Agnes executable or model name. It also probes whether the installed Agnes build exposes the non-interactive recipe runner FirstWindow needs. If that capability is unavailable, Agnes stays blocked even if it is installed and you confirm the route is free. Check **I confirmed my Agnes provider is free** only after verifying that fact for the active route.
 
 Automatic mode routes:
 
-1. Agnes Free, when explicitly confirmed.
-2. Hermes Local, when a managed local model is detected.
+1. Agnes Free, only when the installed CLI supports FirstWindow automation **and** the active route is explicitly confirmed free.
+2. Hermes Local, when a managed local model is detected; FirstWindow isolates this `$0` run from Hermes user-configured cloud fallbacks.
 3. Otherwise: stop. No paid fallback.
 
 ## Durable Resume

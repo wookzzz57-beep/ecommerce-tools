@@ -67,6 +67,7 @@ def build_readiness(
     *,
     agnes_installed: bool,
     agnes_free_confirmed: bool,
+    agnes_headless_ready: bool,
     hermes_installed: bool,
     hermes_model: Mapping[str, Any],
 ) -> ReadinessReport:
@@ -74,12 +75,12 @@ def build_readiness(
     model = str(hermes_model.get("default") or hermes_model.get("model") or "").strip() or None
     hermes_configured = bool(provider and model)
     hermes_zero = bool(hermes_installed and hermes_local_ready(hermes_model))
-    agnes_zero = bool(agnes_installed and agnes_free_confirmed)
+    agnes_zero = bool(agnes_installed and agnes_headless_ready and agnes_free_confirmed)
 
     agnes = EngineReadiness(
         engine="agnes",
         installed=agnes_installed,
-        configured=agnes_installed,
+        configured=bool(agnes_installed and agnes_headless_ready),
         zero_cost_ready=agnes_zero,
     )
     hermes = EngineReadiness(

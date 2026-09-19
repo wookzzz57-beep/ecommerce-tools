@@ -20,7 +20,7 @@ def self_test() -> int:
     assert "hermes-agent.nousresearch.com" in beginner_setup_action("hermes").target
     assert parse_hermes_model_json('{"provider":"llamacpp","default":"demo"}')["provider"] == "llamacpp"
     assert translate("zh-CN", "button.one_click_ready") == "一键就绪"
-    report = build_readiness(agnes_installed=False, agnes_free_confirmed=False, hermes_installed=True, hermes_model={"provider": "agnes", "default": "cloud"})
+    report = build_readiness(agnes_installed=False, agnes_free_confirmed=False, agnes_headless_ready=False, hermes_installed=True, hermes_model={"provider": "agnes", "default": "cloud"})
     assert report.zero_cost_ready is False and report.action == "configure-hermes-local"
     with tempfile.TemporaryDirectory() as tmp:
         project = Path(tmp)

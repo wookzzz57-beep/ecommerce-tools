@@ -124,7 +124,7 @@ Resume prompts are rebuilt from `task.json`, `checkpoint.json`, and append-only 
 
 ## $0 Guard
 
-FirstWindow does **not** claim every Agnes provider is free. Agnes supports free and paid providers. Agnes is eligible for `$0 Mode` only after explicit user confirmation.
+FirstWindow does **not** claim every Agnes provider is free. Agnes supports free and paid providers. Agnes is eligible for `$0 Mode` only after explicit user confirmation **and** a capability probe confirms that the installed CLI supports FirstWindow's non-interactive recipe runner. Executable presence alone is never readiness.
 
 For Hermes, FirstWindow reads only the non-secret model configuration:
 
@@ -132,15 +132,16 @@ For Hermes, FirstWindow reads only the non-secret model configuration:
 hermes config get model --json
 ```
 
-A managed `llamacpp` Local Model is treated as a local lane. FirstWindow does not read Hermes credential files.
+A managed `llamacpp` Local Model is treated as a local lane. For `$0 Mode`, FirstWindow launches that lane with an explicit `llamacpp` provider and `--ignore-user-config`, so a local failure cannot inherit the user's configured cloud fallback chain. FirstWindow does not read Hermes credential files.
 
 ## Security boundaries
 
 - no API keys stored by FirstWindow
-- no automatic paid fallback
+- no automatic paid fallback; `$0` Hermes Local runs ignore the user's fallback-provider config
 - installer execution is limited to fixed documented Agnes/Hermes commands and always requires explicit confirmation
 - installer waits are bounded; timeout/non-zero failure is treated as blocked and falls back to the official setup page
 - no installer exit or executable presence is treated as inference readiness
+- Agnes must expose the required headless recipe capability before its automatic lane can become eligible
 - unsafe task IDs/path traversal are rejected
 - worker output is not acceptance evidence
 - no shutdown, restart, sleep, or power operations
@@ -172,6 +173,7 @@ Windows CI additionally:
 - imports Tkinter
 - builds the single-file EXE with PyInstaller
 - launches the packaged EXE in `--self-test` mode
+- launches the packaged Tk GUI in `--ui-self-test` mode to verify live language switching and persisted preference
 - generates `SHA256SUMS.txt`
 - uploads the EXE + checksum as CI artifacts
 - publishes a Release only from a `v*` tag whose version matches `pyproject.toml`

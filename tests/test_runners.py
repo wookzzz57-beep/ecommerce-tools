@@ -36,6 +36,27 @@ class RunnerTests(unittest.TestCase):
             self.assertIn("--model", command)
             self.assertIn("Qwen3-Coder", command)
 
+    def test_hermes_zero_cost_local_isolates_user_fallback_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            command = list(
+                hermes_command(
+                    Path(tmp),
+                    "t4",
+                    "verify local lane",
+                    "Qwen3-Coder",
+                    provider="llamacpp",
+                    isolate_user_config=True,
+                )
+            )
+            self.assertIn("--ignore-user-config", command)
+            self.assertIn("--provider", command)
+            self.assertEqual(command[command.index("--provider") + 1], "llamacpp")
+
+    def test_unknown_cost_hermes_keeps_user_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            command = list(hermes_command(Path(tmp), "t5", "cloud task", "cloud-model", provider="custom"))
+            self.assertNotIn("--ignore-user-config", command)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,15 +17,19 @@ def runtime_path_candidates(
     env: MutableMapping[str, str] | None = None,
 ) -> list[Path]:
     env = env if env is not None else os.environ
-    if _platform_name(platform_name) != "windows" or target != "hermes":
+    if _platform_name(platform_name) != "windows":
         return []
 
     local_app_data = (env.get("LOCALAPPDATA") or "").strip()
     if not local_app_data:
         return []
 
-    root = Path(local_app_data) / "hermes"
-    return [root / "bin", root / "hermes-agent" / "venv" / "Scripts"]
+    if target == "agnes":
+        return [Path(local_app_data) / "Agnes" / "bin"]
+    if target == "hermes":
+        root = Path(local_app_data) / "hermes"
+        return [root / "bin", root / "hermes-agent" / "venv" / "Scripts"]
+    return []
 
 
 def refresh_runtime_paths(

@@ -12,6 +12,7 @@ class ReadinessTests(unittest.TestCase):
         report = build_readiness(
             agnes_installed=False,
             agnes_free_confirmed=False,
+            agnes_headless_ready=False,
             hermes_installed=False,
             hermes_model={},
         )
@@ -23,6 +24,7 @@ class ReadinessTests(unittest.TestCase):
         report = build_readiness(
             agnes_installed=False,
             agnes_free_confirmed=False,
+            agnes_headless_ready=False,
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "agnes-2.5-flash"},
         )
@@ -35,6 +37,7 @@ class ReadinessTests(unittest.TestCase):
         report = build_readiness(
             agnes_installed=False,
             agnes_free_confirmed=False,
+            agnes_headless_ready=False,
             hermes_installed=True,
             hermes_model={"provider": "llamacpp", "default": "local-model"},
         )
@@ -46,6 +49,7 @@ class ReadinessTests(unittest.TestCase):
         report = build_readiness(
             agnes_installed=True,
             agnes_free_confirmed=True,
+            agnes_headless_ready=True,
             hermes_installed=False,
             hermes_model={},
         )
@@ -63,18 +67,21 @@ class ReadinessTests(unittest.TestCase):
         local_a = build_readiness(
             agnes_installed=False,
             agnes_free_confirmed=False,
+            agnes_headless_ready=False,
             hermes_installed=True,
             hermes_model={"provider": "llamacpp", "default": "model-a"},
         )
         local_b = build_readiness(
             agnes_installed=False,
             agnes_free_confirmed=False,
+            agnes_headless_ready=False,
             hermes_installed=True,
             hermes_model={"provider": "llamacpp", "default": "model-b"},
         )
         blocked = build_readiness(
             agnes_installed=False,
             agnes_free_confirmed=False,
+            agnes_headless_ready=False,
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "cloud"},
         )
@@ -87,12 +94,14 @@ class ReadinessTests(unittest.TestCase):
         ready = build_readiness(
             agnes_installed=True,
             agnes_free_confirmed=True,
+            agnes_headless_ready=True,
             hermes_installed=False,
             hermes_model={},
         )
         blocked = build_readiness(
             agnes_installed=True,
             agnes_free_confirmed=False,
+            agnes_headless_ready=False,
             hermes_installed=False,
             hermes_model={},
         )

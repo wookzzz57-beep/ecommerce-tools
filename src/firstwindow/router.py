@@ -5,7 +5,7 @@ import os
 import shutil
 from typing import Any, Mapping
 
-from .system_status import hermes_local_ready
+from .system_status import AgnesCapabilities, hermes_local_ready, read_agnes_capabilities
 
 _TRUTHY = {"1", "true", "yes", "on"}
 
@@ -33,10 +33,13 @@ def detect_lanes(
     env: Mapping[str, str] | None = None,
     *,
     hermes_model: Mapping[str, Any] | None = None,
+    agnes_capabilities: AgnesCapabilities | None = None,
 ) -> list[Lane]:
     env = env or os.environ
     agnes = command_exists("agnes")
     hermes = command_exists("hermes")
+    capabilities = agnes_capabilities or read_agnes_capabilities()
+    agnes_automation = bool(agnes and capabilities.installed and capabilities.headless_recipe_ready)
     agnes_free = _truthy(env.get("FIRSTWINDOW_AGNES_FREE_CONFIRMED"))
 
     managed_local = hermes_local_ready(hermes_model or {})
@@ -58,11 +61,15 @@ def detect_lanes(
             "agnes-free",
             "agnes",
             True,
-            agnes and agnes_free,
+            agnes_automation and agnes_free,
             (
-                "Agnes CLI detected and its configured provider is explicitly confirmed free."
-                if agnes and agnes_free
-                else "Requires Agnes CLI plus explicit free-provider confirmation."
+                "Agnes headless recipe runner detected and its configured provider is explicitly confirmed free."
+                if agnes_automation and agnes_free
+                else (
+                    f"Agnes is installed but automatic recipe execution is unavailable ({capabilities.reason})."
+                    if agnes
+                    else "Requires Agnes CLI, headless recipe support, and explicit free-provider confirmation."
+                )
             ),
         ),
         Lane(
@@ -79,15 +86,19 @@ def detect_lanes(
                     else "Requires Hermes with a selected managed Local Model."
                 )
             ),
-            None if managed_local else ("custom" if manual_local else None),
+            "llamacpp" if managed_local else ("custom" if manual_local else None),
             managed_model if managed_local else (manual_model or None),
         ),
         Lane(
             "agnes-configured",
             "agnes",
             False,
-            agnes,
-            "Uses the provider configured in Agnes; cost is not guaranteed to be $0.",
+            agnes_automation,
+            (
+                "Uses the provider configured in Agnes; cost is not guaranteed to be $0."
+                if agnes_automation
+                else f"Agnes automatic recipe execution is unavailable ({capabilities.reason})."
+            ),
         ),
         Lane(
             "hermes-configured",

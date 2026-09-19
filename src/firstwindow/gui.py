@@ -22,7 +22,7 @@ from .readiness import build_readiness, probe_command, route_fingerprint, setup_
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command
-from .system_status import hermes_local_ready, read_hermes_model
+from .system_status import AgnesCapabilities, hermes_local_ready, read_agnes_capabilities, read_hermes_model
 from .windows_paths import refresh_runtime_paths
 
 
@@ -59,6 +59,7 @@ def main(*, ui_self_test: bool = False) -> int:
             self.setup_poll_attempts = 0
             self.verified_lane: str | None = None
             self.verified_route = None
+            self.agnes_capabilities = AgnesCapabilities(False, None, False, "not-probed")
 
             self._build()
             self._apply_language(initial=True)
@@ -266,15 +267,18 @@ def main(*, ui_self_test: bool = False) -> int:
 
         def _state(self):
             model = read_hermes_model()
+            self.agnes_capabilities = read_agnes_capabilities()
             state = BeginnerState(
-                agnes_installed=shutil.which("agnes") is not None,
+                agnes_installed=self.agnes_capabilities.installed,
                 agnes_free_confirmed=bool(self.agnes_free_var.get()),
+                agnes_headless_ready=self.agnes_capabilities.headless_recipe_ready,
                 hermes_installed=shutil.which("hermes") is not None,
                 hermes_local_ready=hermes_local_ready(model),
             )
             report = build_readiness(
                 agnes_installed=state.agnes_installed,
                 agnes_free_confirmed=state.agnes_free_confirmed,
+                agnes_headless_ready=state.agnes_headless_ready,
                 hermes_installed=state.hermes_installed,
                 hermes_model=model,
             )
@@ -297,8 +301,11 @@ def main(*, ui_self_test: bool = False) -> int:
                     self.verified_route = None
             local_name = str(model.get("default") or model.get("model") or "")
             agnes_text = self._tr("status.installed") if state.agnes_installed else self._tr("status.not_installed")
-            if state.agnes_installed and state.agnes_free_confirmed:
+            if state.agnes_installed and not state.agnes_headless_ready:
+                agnes_text += " · " + self._tr("status.automation_unavailable")
+            elif state.agnes_installed and state.agnes_free_confirmed:
                 agnes_text += " · " + self._tr("status.zero_confirmed")
+            self.agnes_check.configure(state="normal" if state.agnes_headless_ready else "disabled")
 
             hermes_text = self._tr("status.not_installed")
             if state.hermes_installed:
@@ -547,7 +554,7 @@ def main(*, ui_self_test: bool = False) -> int:
         def _lane(self, env, *, preferred: str | None = None):
             model = read_hermes_model()
             return choose_lane(
-                detect_lanes(env, hermes_model=model),
+                detect_lanes(env, hermes_model=model, agnes_capabilities=self.agnes_capabilities),
                 zero_cost=True,
                 preferred=preferred if preferred is not None else self._preferred(),
             )
@@ -557,7 +564,16 @@ def main(*, ui_self_test: bool = False) -> int:
                 return list(agnes_command(project, task_id, prompt))
             if not lane.model:
                 raise RuntimeError(self._tr("error.select_local"))
-            return list(hermes_command(project, task_id, prompt, lane.model, provider=lane.provider))
+            return list(
+                hermes_command(
+                    project,
+                    task_id,
+                    prompt,
+                    lane.model,
+                    provider=lane.provider,
+                    isolate_user_config=bool(lane.zero_cost),
+                )
+            )
 
         def _start_ready_probe(self, report=None) -> None:
             if self.setup_probe_running or self.running:

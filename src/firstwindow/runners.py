@@ -38,12 +38,16 @@ def hermes_command(
     model: str,
     *,
     provider: str | None = "custom",
+    isolate_user_config: bool = False,
 ) -> Sequence[str]:
     runtime = project / ".firstwindow" / "runtime"
     runtime.mkdir(parents=True, exist_ok=True)
     usage = runtime / f"{task_id}-hermes-usage.json"
 
-    command: list[str] = ["hermes", "-z", task]
+    command: list[str] = ["hermes"]
+    if isolate_user_config:
+        command.append("--ignore-user-config")
+    command.extend(["-z", task])
     if provider:
         command.extend(["--provider", provider])
     command.extend(["--model", model, "--usage-file", str(usage)])
