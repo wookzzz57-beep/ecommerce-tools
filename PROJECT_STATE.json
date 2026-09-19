@@ -49,7 +49,7 @@
     "main_windows_artifact_id": 10582403560,
     "main_windows_artifact_digest": "sha256:101809f9ccceb0589df3bd6989151290d8445841f3d6d2ec174003938e381447",
     "real_device": "LAPTOP-RF3RT9HP",
-    "real_exe_sha256": "62231ba2e5a68d6f45462ab7530df6edac971f3f286f4cf64b1bee49462450b1",
+    "real_exe_sha256": "9db753c48ef379c465a70d1069cff604de55135b97a2f36af826d26d62ad4d89",
     "real_checksum_match": true,
     "real_packaged_self_test_exit": 0,
     "real_screenshot": "docs/assets/firstwindow-window.png",
@@ -119,7 +119,7 @@
     "launch_exp_001": {
       "issue": 17,
       "channel": "Hacker News / Show HN",
-      "status": "ready",
+      "status": "ready-for-reconciliation-or-publish",
       "issue_comment_id": 5733366528
     },
     "issue_19": {
