@@ -41,17 +41,31 @@ class RouterTests(unittest.TestCase):
         self.assertTrue(lane.profile_home)
 
     @patch("firstwindow.router.command_exists", return_value=True)
-    def test_agnes_api_requires_explicit_free_confirmation(self, _exists):
+    def test_agnes_api_requires_isolated_credential_presence(self, _exists):
+        env = {"FIRSTWINDOW_AGNES_FREE_CONFIRMED": "1"}
+        lanes = detect_lanes(
+            env,
+            agnes_route=api_route(),
+            agnes_credential_present=False,
+            agnes_capabilities=AgnesCapabilities(False, None, False, "not-installed"),
+        )
         with self.assertRaises(RuntimeError):
-            choose_lane(
-                detect_lanes(
-                    {},
-                    agnes_route=api_route(),
-                    agnes_capabilities=AgnesCapabilities(False, None, False, "not-installed"),
-                ),
-                zero_cost=True,
-                preferred="agnes-free",
-            )
+            choose_lane(lanes, zero_cost=True, preferred="agnes-free")
+        self.assertIn("credential is missing", lanes[0].reason)
+
+    @patch("firstwindow.router.command_exists", return_value=True)
+    def test_agnes_api_requires_explicit_free_confirmation(self, _exists):
+        with patch.dict("os.environ", {"FIRSTWINDOW_AGNES_FREE_CONFIRMED": "1"}, clear=False):
+            with self.assertRaises(RuntimeError):
+                choose_lane(
+                    detect_lanes(
+                        {},
+                        agnes_route=api_route(),
+                        agnes_capabilities=AgnesCapabilities(False, None, False, "not-installed"),
+                    ),
+                    zero_cost=True,
+                    preferred="agnes-free",
+                )
 
     @patch("firstwindow.router.command_exists", return_value=True)
     def test_agnes_api_blocks_profile_with_fallbacks(self, _exists):

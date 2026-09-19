@@ -45,7 +45,7 @@ def project_env(
     terminal tools from a persisted workspace. TERMINAL_CWD is the upstream
     compatibility pin and remains harmless on fixed releases.
     """
-    result = dict(env or os.environ)
+    result = dict(os.environ if env is None else env)
     result["TERMINAL_CWD"] = str(project.resolve())
     return result
 

@@ -18,7 +18,7 @@ from .distribution import beginner_setup_action
 from .durable import EXECUTION_ACCEPTANCE, append_evidence, create_task, default_acceptance, write_checkpoint
 from .i18n import LANGUAGE_NAMES, default_settings_path, load_language, save_language, translate
 from .hermes_agnes import (
-    AGNES_MODEL, agnes_api_key_present, attest_hermes_usage, ensure_firstwindow_agnes_profile,
+    AGNES_MODEL, agnes_api_key_fingerprint, attest_hermes_usage, ensure_firstwindow_agnes_profile,
     read_firstwindow_agnes_route, save_agnes_api_key, scoped_env,
 )
 from .onboarding import BeginnerState
@@ -50,6 +50,7 @@ def main(*, ui_self_test: bool = False) -> int:
             self.runtime_var = tk.StringVar()
             self.project_var = tk.StringVar()
             self.agnes_free_var = tk.BooleanVar(value=False)
+            self.confirmed_agnes_key_fingerprint: str | None = None
             self.status_var = tk.StringVar()
             self.next_var = tk.StringVar()
             self.resume_var = tk.StringVar()
@@ -177,7 +178,7 @@ def main(*, ui_self_test: bool = False) -> int:
             self.agnes_check = ttk.Checkbutton(
                 controls,
                 variable=self.agnes_free_var,
-                command=self.refresh,
+                command=self._on_agnes_free_toggle,
             )
             self.agnes_check.pack(side="left", padx=8)
             self.start_button = ttk.Button(controls, command=self.start)
@@ -282,17 +283,39 @@ def main(*, ui_self_test: bool = False) -> int:
                 env = scoped_env(lane.profile_home, env)
             return env
 
+        def _current_agnes_key_fingerprint(self) -> str | None:
+            return agnes_api_key_fingerprint(self.agnes_route.profile_home, {})
+
+        def _set_agnes_free_confirmed(self, confirmed: bool) -> None:
+            fingerprint = self._current_agnes_key_fingerprint() if confirmed else None
+            self.confirmed_agnes_key_fingerprint = fingerprint
+            self.agnes_free_var.set(bool(confirmed and fingerprint))
+
+        def _on_agnes_free_toggle(self) -> None:
+            self._set_agnes_free_confirmed(bool(self.agnes_free_var.get()))
+            self.refresh()
+
         def _state(self):
             model = read_hermes_model()
             self.agnes_route = read_firstwindow_agnes_route()
+            key_fingerprint = self._current_agnes_key_fingerprint()
+            if self.agnes_free_var.get() and key_fingerprint != self.confirmed_agnes_key_fingerprint:
+                self.agnes_free_var.set(False)
+                self.confirmed_agnes_key_fingerprint = None
+            free_confirmed = bool(
+                self.agnes_free_var.get()
+                and key_fingerprint
+                and key_fingerprint == self.confirmed_agnes_key_fingerprint
+            )
             state = BeginnerState(
                 agnes_api_ready=self.agnes_route.ready,
-                agnes_free_confirmed=bool(self.agnes_free_var.get()),
+                agnes_free_confirmed=free_confirmed,
                 hermes_installed=shutil.which("hermes") is not None,
                 hermes_local_ready=hermes_local_ready(model),
             )
             report = build_readiness(
                 agnes_free_confirmed=state.agnes_free_confirmed,
+                agnes_key_fingerprint=key_fingerprint,
                 agnes_route=self.agnes_route,
                 hermes_installed=state.hermes_installed,
                 hermes_model=model,
@@ -351,6 +374,8 @@ def main(*, ui_self_test: bool = False) -> int:
                 self.next_var.set(self._tr("next.ready"))
             elif report.action == "install-hermes":
                 self.next_var.set(self._tr("next.install"))
+            elif report.action == "configure-agnes-key":
+                self.next_var.set(self._tr("next.agnes_key_missing"))
             elif report.action == "confirm-agnes-free":
                 self.next_var.set(self._tr("next.confirm_agnes"))
             else:
@@ -362,14 +387,14 @@ def main(*, ui_self_test: bool = False) -> int:
                 and route_is_verified(report, self.verified_lane, self.verified_lane, self.verified_route)
             )
             self.start_button.configure(state="normal" if verified and not self.running else "disabled")
-            if not verified:
-                self.resume_button.configure(state="disabled")
+            can_resume = bool(verified and self.resume_candidate is not None and not self.running)
+            self.resume_button.configure(state="normal" if can_resume else "disabled")
 
         def choose_project(self) -> None:
             path = filedialog.askdirectory(title=self._tr("choose.project"))
             if path:
                 self.project_var.set(path)
-                self.refresh_resume()
+                self.refresh()
 
         def create_demo(self) -> None:
             parent = filedialog.askdirectory(title=self._tr("choose.demo_parent"))
@@ -383,7 +408,7 @@ def main(*, ui_self_test: bool = False) -> int:
                 return
             self.project_var.set(str(target))
             self._append(self._tr("log.created_demo", path=target))
-            self.refresh_resume()
+            self.refresh()
 
         def refresh_resume(self) -> None:
             project = Path(self.project_var.get()).expanduser()
@@ -406,8 +431,6 @@ def main(*, ui_self_test: bool = False) -> int:
                     next_action=item.next_action,
                 )
             )
-            if not self.running:
-                self.resume_button.configure(state="normal")
 
         def _creation_flags(self) -> int:
             return subprocess.CREATE_NEW_CONSOLE if os.name == "nt" else 0
@@ -515,12 +538,6 @@ def main(*, ui_self_test: bool = False) -> int:
             self._refresh_runtime_paths()
             _state, _model, report = self._state()
 
-            if self.agnes_route.ready and not agnes_api_key_present(
-                self.agnes_route.profile_home, self._env()
-            ):
-                self._configure_agnes_api_key()
-                return
-
             if report.zero_cost_ready:
                 self.setup_waiting = False
                 self._start_ready_probe(report)
@@ -540,12 +557,16 @@ def main(*, ui_self_test: bool = False) -> int:
                 self._prepare_agnes_profile()
                 return
 
+            if report.action == "configure-agnes-key":
+                self._configure_agnes_api_key()
+                return
+
             if report.action == "confirm-agnes-free":
                 if messagebox.askyesno(
                     self._tr("confirm.agnes_free.title"),
                     self._tr("confirm.agnes_free"),
                 ):
-                    self.agnes_free_var.set(True)
+                    self._set_agnes_free_confirmed(True)
                     self.refresh()
                     _state, _model, confirmed = self._state()
                     self._start_ready_probe(confirmed)
@@ -638,15 +659,16 @@ def main(*, ui_self_test: bool = False) -> int:
                     env,
                     hermes_model=model,
                     agnes_route=self.agnes_route,
+                    agnes_credential_present=bool(self._current_agnes_key_fingerprint()),
                     agnes_capabilities=read_agnes_capabilities(),
                 ),
                 zero_cost=True,
                 preferred=preferred if preferred is not None else self._preferred(),
             )
 
-        def _verified_lane(self, env):
-            lane = self._lane(env)
+        def _verified_lane(self):
             _state, _model, report = self._state()
+            lane = self._lane(self._env())
             if not route_is_verified(
                 report, lane.name, self.verified_lane, self.verified_route
             ):
@@ -834,7 +856,7 @@ def main(*, ui_self_test: bool = False) -> int:
                 return
             base_env = self._env()
             try:
-                lane = self._verified_lane(base_env)
+                lane = self._verified_lane()
             except Exception as exc:
                 messagebox.showerror(self._tr("dialog.guard"), str(exc))
                 return
@@ -860,7 +882,7 @@ def main(*, ui_self_test: bool = False) -> int:
                 context = load_resume_context(project, self.resume_candidate.task_id)
                 prompt = build_resume_prompt(context)
                 base_env = self._env()
-                lane = self._verified_lane(base_env)
+                lane = self._verified_lane()
                 lane_env = self._env(lane)
             except Exception as exc:
                 messagebox.showerror(self._tr("dialog.resume"), str(exc))
@@ -1005,6 +1027,14 @@ def main(*, ui_self_test: bool = False) -> int:
             root2.update_idletasks()
             assert app2.language == "zh-CN"
             assert app2.one_click_button.cget("text") == translate("zh-CN", "button.one_click_ready")
+            with tempfile.TemporaryDirectory(prefix="firstwindow-ui-resume-") as tmp:
+                project = Path(tmp)
+                create_task(project, "ui-resume", "resume gate self-test", default_acceptance())
+                app2.project_var.set(str(project))
+                app2.refresh_resume()
+                root2.update_idletasks()
+                assert app2.resume_candidate is not None
+                assert str(app2.resume_button.cget("state")) == "disabled"
             root2.destroy()
             return 0
         except Exception:

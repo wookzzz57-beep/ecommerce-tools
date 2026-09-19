@@ -18,6 +18,8 @@ class EngineReadiness:
     provider: str | None = None
     model: str | None = None
     base_url: str | None = None
+    credential_present: bool | None = None
+    credential_fingerprint: str | None = None
 
 
 @dataclass(frozen=True)
@@ -38,7 +40,7 @@ class ProbeResult:
     reason: str
 
 
-RouteFingerprint = tuple[str, str | None, str | None, str | None]
+RouteFingerprint = tuple[str, str | None, str | None, str | None, str | None]
 
 
 def setup_watch_expired(attempts: int, max_attempts: int) -> bool:
@@ -56,6 +58,7 @@ def route_fingerprint(report: ReadinessReport, lane_name: str) -> RouteFingerpri
             report.agnes.provider,
             report.agnes.model,
             report.agnes.base_url,
+            report.agnes.credential_fingerprint,
         )
     if lane_name == "hermes-local":
         if not report.hermes.zero_cost_ready:
@@ -65,6 +68,7 @@ def route_fingerprint(report: ReadinessReport, lane_name: str) -> RouteFingerpri
             report.hermes.provider,
             report.hermes.model,
             report.hermes.base_url,
+            None,
         )
     return None
 
@@ -83,6 +87,7 @@ def route_is_verified(
 def build_readiness(
     *,
     agnes_free_confirmed: bool,
+    agnes_key_fingerprint: str | None,
     agnes_route: HermesAgnesRoute,
     hermes_installed: bool,
     hermes_model: Mapping[str, Any],
@@ -92,7 +97,13 @@ def build_readiness(
     base_url = str(hermes_model.get("base_url") or "").strip() or None
     hermes_configured = bool(provider and model)
     hermes_zero = bool(hermes_installed and hermes_local_ready(hermes_model))
-    agnes_zero = bool(hermes_installed and agnes_route.ready and agnes_free_confirmed)
+    agnes_key_present = bool(agnes_key_fingerprint)
+    agnes_zero = bool(
+        hermes_installed
+        and agnes_route.ready
+        and agnes_key_present
+        and agnes_free_confirmed
+    )
 
     agnes = EngineReadiness(
         engine="hermes",
@@ -102,6 +113,8 @@ def build_readiness(
         provider="agnes" if agnes_route.provider_configured else None,
         model=agnes_route.model,
         base_url=agnes_route.base_url,
+        credential_present=agnes_key_present,
+        credential_fingerprint=agnes_key_fingerprint,
     )
     hermes = EngineReadiness(
         engine="hermes",
@@ -119,6 +132,8 @@ def build_readiness(
         return ReadinessReport("ready", "verify", True, "hermes-local", agnes, hermes)
     if not hermes_installed:
         return ReadinessReport("blocked", "install-hermes", False, None, agnes, hermes)
+    if agnes_route.ready and not agnes_key_present:
+        return ReadinessReport("blocked", "configure-agnes-key", False, None, agnes, hermes)
     if agnes_route.ready and not agnes_free_confirmed:
         return ReadinessReport("blocked", "confirm-agnes-free", False, None, agnes, hermes)
     return ReadinessReport("blocked", "prepare-agnes-profile", False, None, agnes, hermes)

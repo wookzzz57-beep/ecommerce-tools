@@ -36,9 +36,10 @@ def detect_lanes(
     *,
     hermes_model: Mapping[str, Any] | None = None,
     agnes_route: HermesAgnesRoute | None = None,
+    agnes_credential_present: bool = True,
     agnes_capabilities: AgnesCapabilities | None = None,
 ) -> list[Lane]:
-    env = env or os.environ
+    env = os.environ if env is None else env
     hermes = command_exists("hermes")
     agnes_cli = command_exists("agnes")
     capabilities = agnes_capabilities or read_agnes_capabilities()
@@ -48,7 +49,9 @@ def detect_lanes(
     agnes_free = _truthy(env.get("FIRSTWINDOW_AGNES_FREE_CONFIRMED"))
 
     route = agnes_route
-    agnes_api_ready = bool(hermes and route and route.ready and agnes_free)
+    agnes_api_ready = bool(
+        hermes and route and route.ready and agnes_credential_present and agnes_free
+    )
 
     managed_local = hermes_local_ready(hermes_model or {})
     manual_local = (
@@ -64,11 +67,13 @@ def detect_lanes(
         ).strip()
     manual_model = (env.get("FIRSTWINDOW_LOCAL_MODEL") or "").strip()
 
-    if route and route.ready:
+    if route and route.ready and not agnes_credential_present:
+        agnes_reason = "Hermes isolated Agnes API profile is configured but its credential is missing."
+    elif route and route.ready:
         agnes_reason = (
-            "Hermes isolated Agnes API profile is ready and this account route is explicitly confirmed free."
+            "Hermes isolated Agnes API profile is ready and this account/key route is explicitly confirmed free."
             if agnes_free
-            else "Hermes isolated Agnes API profile is ready; confirm that the current Agnes account route is free."
+            else "Hermes isolated Agnes API profile is ready; confirm that the current Agnes account/key route is free."
         )
     elif route:
         agnes_reason = f"Requires an isolated Hermes -> Agnes API profile ({route.reason})."

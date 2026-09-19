@@ -12,7 +12,7 @@ import uuid
 from .bootstrap import INSTALLER_TIMEOUT_SECONDS, install_command, run_installer_command, setup_actions
 from .demo_project import create_demo_project
 from .durable import (EXECUTION_ACCEPTANCE, append_evidence, create_task, default_acceptance, verification_report, write_checkpoint)
-from .hermes_agnes import AGNES_MODEL, attest_hermes_usage, read_firstwindow_agnes_route, scoped_env
+from .hermes_agnes import AGNES_MODEL, agnes_api_key_present, attest_hermes_usage, read_firstwindow_agnes_route, scoped_env
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import Lane, choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command, hermes_usage_path, project_env, run_command
@@ -27,10 +27,13 @@ def _project(value: str) -> Path:
 
 
 def _lanes(env: dict[str, str] | None = None):
+    source = os.environ if env is None else env
+    route = read_firstwindow_agnes_route()
     return detect_lanes(
-        env or os.environ,
+        source,
         hermes_model=read_hermes_model(),
-        agnes_route=read_firstwindow_agnes_route(),
+        agnes_route=route,
+        agnes_credential_present=agnes_api_key_present(route.profile_home, {}),
         agnes_capabilities=read_agnes_capabilities(),
     )
 
@@ -40,7 +43,7 @@ def _lane_env(
     project: Path,
     env: dict[str, str] | None = None,
 ) -> dict[str, str]:
-    base = dict(env or os.environ)
+    base = dict(os.environ if env is None else env)
     scoped = scoped_env(lane.profile_home, base) if lane.profile_home else base
     return project_env(project, scoped)
 
