@@ -483,7 +483,7 @@ def main() -> int:
                 messagebox.showinfo(self._tr("dialog.hermes"), self._tr("error.install_hermes_first"))
                 return
             try:
-                subprocess.Popen(["hermes", "desktop"], creationflags=self._creation_flags())
+                subprocess.Popen(["hermes", "desktop", "--local"], creationflags=self._creation_flags())
             except Exception as exc:
                 messagebox.showerror(self._tr("dialog.hermes"), str(exc))
 
