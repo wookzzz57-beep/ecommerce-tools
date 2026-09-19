@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import traceback
 import uuid
 import webbrowser
 
@@ -15,7 +16,7 @@ from .bootstrap import install_command
 from .demo_project import create_demo_project
 from .distribution import beginner_setup_action
 from .durable import append_evidence, create_task, write_checkpoint
-from .i18n import LANGUAGE_NAMES, load_language, save_language, translate
+from .i18n import LANGUAGE_NAMES, default_settings_path, load_language, save_language, translate
 from .onboarding import BeginnerState
 from .readiness import build_readiness, probe_command, route_fingerprint
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
@@ -25,7 +26,7 @@ from .system_status import hermes_local_ready, read_hermes_model
 from .windows_paths import refresh_runtime_paths
 
 
-def main() -> int:
+def main(*, ui_self_test: bool = False) -> int:
     import tkinter as tk
     from tkinter import filedialog, messagebox, ttk
 
@@ -747,6 +748,52 @@ def main() -> int:
             except queue.Empty:
                 pass
             self.root.after(100, self._poll_events)
+
+    def run_ui_self_test() -> int:
+        settings_path = default_settings_path()
+        existed = settings_path.exists()
+        original = settings_path.read_bytes() if existed else None
+        roots = []
+        try:
+            root = tk.Tk()
+            roots.append(root)
+            app = App(root)
+            root.update_idletasks()
+
+            app.language_var.set(LANGUAGE_NAMES["zh-CN"])
+            app._on_language_change()
+            root.update_idletasks()
+            assert app.language == "zh-CN"
+            assert app.one_click_button.cget("text") == translate("zh-CN", "button.one_click_ready")
+            assert app.language_label.cget("text") == translate("zh-CN", "label.language")
+            assert load_language(settings_path, system_locale="en") == "zh-CN"
+            root.destroy()
+
+            root2 = tk.Tk()
+            roots.append(root2)
+            app2 = App(root2)
+            root2.update_idletasks()
+            assert app2.language == "zh-CN"
+            assert app2.one_click_button.cget("text") == translate("zh-CN", "button.one_click_ready")
+            root2.destroy()
+            return 0
+        except Exception:
+            traceback.print_exc()
+            return 1
+        finally:
+            for item in roots:
+                try:
+                    item.destroy()
+                except Exception:
+                    pass
+            if existed and original is not None:
+                settings_path.parent.mkdir(parents=True, exist_ok=True)
+                settings_path.write_bytes(original)
+            elif not existed:
+                settings_path.unlink(missing_ok=True)
+
+    if ui_self_test:
+        return run_ui_self_test()
 
     root = tk.Tk()
     App(root)

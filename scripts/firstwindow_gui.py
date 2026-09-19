@@ -33,4 +33,6 @@ if __name__ == "__main__":
     if "--self-test" in sys.argv:
         raise SystemExit(self_test())
     from firstwindow.gui import main
+    if "--ui-self-test" in sys.argv:
+        raise SystemExit(main(ui_self_test=True))
     raise SystemExit(main())

@@ -32,6 +32,12 @@ class I18nTests(unittest.TestCase):
             save_language("en", path)
             self.assertEqual(load_language(path, system_locale="zh_CN"), "en")
 
+    def test_translation_values_can_use_language_placeholder(self):
+        self.assertEqual(
+            translate("en", "language.changed", language="????"),
+            "Language changed to ????.",
+        )
+
     def test_translation_catalogs_have_identical_keys(self):
         self.assertEqual(set(TRANSLATIONS["en"]), set(TRANSLATIONS["zh-CN"]))
 

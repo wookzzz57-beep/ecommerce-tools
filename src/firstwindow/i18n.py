@@ -235,8 +235,8 @@ def save_language(language: str, path: Path | None = None) -> None:
     settings_path.write_text(json.dumps(existing, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def translate(language: str, key: str, **values: object) -> str:
-    lang = normalize_language(language)
+def translate(language_code: str, key: str, **values: object) -> str:
+    lang = normalize_language(language_code)
     template = TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key)
     if template is None:
         template = TRANSLATIONS["en"].get(key, key)
