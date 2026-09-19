@@ -40,7 +40,7 @@
   },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Issue #22 remains the only engineering WIP. Final pre-PR local hardening passes on LAPTOP-RF3RT9HP: 111/111 tests, validate/state/compile, source self-test and bilingual UI self-test; credential isolation now removes ambient process AGNES_API_KEY whenever the isolated Hermes profile is scoped; an adversarial probe with a deliberately wrong ambient key still passed Hermes -> Agnes API using the isolated profile credential with usage attestation; packaged self/UI tests pass; candidate EXE bytes=10596323, SHA-256=5b0b9f5ab0f6a3ce031ff2fd67bee9135f0ade48f564da9c839c3a5bdf9d3bc6. Previous PR #23 green checks are superseded by this credential-boundary change; push the exact source, require fresh CI + Windows App on the new head, then merge only if both pass.",
+  "resume_point": "Issue #22 remains the only engineering WIP. Product/runtime hardening passes locally with 111/111 tests, real Agnes credential-isolation adversarial probe, and packaged self/UI tests. Final release-pipeline review found GitHub deprecating the Node 20 runtime used by actions/upload-artifact@v4; workflow is upgraded to official upload-artifact@v7 (Node 24). This workflow-only reliability change supersedes prior final-head checks. Require fresh PR CI + Windows App on the new head; merge only after both pass without the upload-artifact Node 20 warning.",
   "last_verified_main_sha": "b8eefeabdc5f9340fe7fd1ed346ce0934155afbb",
   "evidence": {
     "main_linux_ci_run": 35435480264,
@@ -293,7 +293,8 @@
         "model": "agnes-2.5-flash",
         "api_calls": 1
       },
-      "previous_pr_gate_note": "PR #23 checks on bee4e786 passed but are superseded by the ambient-key isolation patch; fresh final-head checks required."
+      "previous_pr_gate_note": "PR #23 checks on bee4e786 passed but are superseded by the ambient-key isolation patch; fresh final-head checks required.",
+      "windows_artifact_action": "actions/upload-artifact@v7 (Node 24; upgraded from v4 deprecation warning before final PR acceptance)"
     }
   },
   "external_blockers": [],
