@@ -36,6 +36,27 @@ class ProbeResult:
     reason: str
 
 
+RouteFingerprint = tuple[str, str | None, str | None]
+
+
+def route_fingerprint(report: ReadinessReport, lane_name: str) -> RouteFingerprint | None:
+    """Return the state that a successful probe actually proved.
+
+    A proof is valid only while the same zero-cost route remains eligible.
+    Hermes includes provider/model identity so changing the local model
+    invalidates stale UI proof instead of continuing to display READY.
+    """
+    if lane_name == "agnes-free":
+        if not report.agnes.zero_cost_ready:
+            return None
+        return ("agnes-free", None, None)
+    if lane_name == "hermes-local":
+        if not report.hermes.zero_cost_ready:
+            return None
+        return ("hermes-local", report.hermes.provider, report.hermes.model)
+    return None
+
+
 def build_readiness(
     *,
     agnes_installed: bool,

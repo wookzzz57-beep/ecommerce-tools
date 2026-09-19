@@ -17,7 +17,7 @@ from .distribution import beginner_setup_action
 from .durable import append_evidence, create_task, write_checkpoint
 from .i18n import LANGUAGE_NAMES, load_language, save_language, translate
 from .onboarding import BeginnerState
-from .readiness import build_readiness, probe_command
+from .readiness import build_readiness, probe_command, route_fingerprint
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command
@@ -53,6 +53,7 @@ def main() -> int:
             self.setup_poll_id = None
             self.setup_probe_running = False
             self.verified_lane: str | None = None
+            self.verified_route = None
 
             self._build()
             self._apply_language(initial=True)
@@ -284,6 +285,11 @@ def main() -> int:
         def refresh(self) -> None:
             self._refresh_runtime_paths()
             state, model, report = self._state()
+            if self.verified_lane:
+                current_route = route_fingerprint(report, self.verified_lane)
+                if current_route != self.verified_route:
+                    self.verified_lane = None
+                    self.verified_route = None
             local_name = str(model.get("default") or model.get("model") or "")
             agnes_text = self._tr("status.installed") if state.agnes_installed else self._tr("status.not_installed")
             if state.agnes_installed and state.agnes_free_confirmed:
@@ -707,6 +713,8 @@ def main() -> int:
                             self._append(result.output)
                         if result.passed:
                             self.verified_lane = str(lane_name)
+                            _state, _model, current_report = self._state()
+                            self.verified_route = route_fingerprint(current_report, self.verified_lane)
                             self._append(self._tr("setup.probe_passed", lane=lane_name))
                             messagebox.showinfo(
                                 self._tr("setup.ready_title"),
@@ -714,6 +722,7 @@ def main() -> int:
                             )
                         else:
                             self.verified_lane = None
+                            self.verified_route = None
                             reason = result.reason
                             self._append(self._tr("setup.probe_failed", lane=lane_name, reason=reason))
                             messagebox.showerror(
@@ -726,6 +735,7 @@ def main() -> int:
                         self.setup_probe_running = False
                         self.one_click_button.configure(state="normal")
                         self.verified_lane = None
+                        self.verified_route = None
                         self._append(self._tr("setup.probe_failed", lane=lane_name, reason=error))
                         messagebox.showerror(self._tr("dialog.verify"), str(error))
                         self.refresh()

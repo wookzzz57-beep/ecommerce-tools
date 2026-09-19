@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from firstwindow.readiness import build_readiness, probe_command
+from firstwindow.readiness import build_readiness, probe_command, route_fingerprint
 
 
 class ReadinessTests(unittest.TestCase):
@@ -51,6 +51,46 @@ class ReadinessTests(unittest.TestCase):
         )
         self.assertTrue(report.zero_cost_ready)
         self.assertEqual(report.ready_lane, "agnes-free")
+
+    def test_route_fingerprint_invalidates_changed_or_blocked_route(self):
+        local_a = build_readiness(
+            agnes_installed=False,
+            agnes_free_confirmed=False,
+            hermes_installed=True,
+            hermes_model={"provider": "llamacpp", "default": "model-a"},
+        )
+        local_b = build_readiness(
+            agnes_installed=False,
+            agnes_free_confirmed=False,
+            hermes_installed=True,
+            hermes_model={"provider": "llamacpp", "default": "model-b"},
+        )
+        blocked = build_readiness(
+            agnes_installed=False,
+            agnes_free_confirmed=False,
+            hermes_installed=True,
+            hermes_model={"provider": "agnes", "default": "cloud"},
+        )
+        proof = route_fingerprint(local_a, "hermes-local")
+        self.assertIsNotNone(proof)
+        self.assertNotEqual(proof, route_fingerprint(local_b, "hermes-local"))
+        self.assertIsNone(route_fingerprint(blocked, "hermes-local"))
+
+    def test_agnes_fingerprint_requires_current_free_confirmation(self):
+        ready = build_readiness(
+            agnes_installed=True,
+            agnes_free_confirmed=True,
+            hermes_installed=False,
+            hermes_model={},
+        )
+        blocked = build_readiness(
+            agnes_installed=True,
+            agnes_free_confirmed=False,
+            hermes_installed=False,
+            hermes_model={},
+        )
+        self.assertEqual(route_fingerprint(ready, "agnes-free"), ("agnes-free", None, None))
+        self.assertIsNone(route_fingerprint(blocked, "agnes-free"))
 
     def test_probe_command_reports_real_process_result(self):
         calls = []
