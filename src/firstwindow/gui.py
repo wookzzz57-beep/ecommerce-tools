@@ -540,7 +540,13 @@ def main() -> int:
                             "Do not modify files. Reply exactly FIRSTWINDOW_READY and exit.",
                             lane,
                         )
-                        result = probe_command(\n                            command,\n                            project,\n                            env=env,\n                            timeout=300,\n                            expected_text="FIRSTWINDOW_READY",\n                        )
+                        result = probe_command(
+                            command,
+                            project,
+                            env=env,
+                            timeout=300,
+                            expected_text="FIRSTWINDOW_READY",
+                        )
                 except Exception as exc:
                     self.events.put(("probe_error", (lane.name, str(exc))))
                     return
