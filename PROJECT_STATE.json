@@ -1,13 +1,15 @@
 {
   "schema_version": 1,
   "project": "FirstWindow",
-  "phase": "v0.4.1-post-release-launch",
-  "status": "post-release",
+  "phase": "v0.4.1-public-site-truth-hotfix",
+  "status": "active",
   "canonical_branch": "main",
   "current_release": "v0.4.1",
-  "primary_objective": "Operate the post-release launch evidence loop from the verified v0.4.1 baseline; keep product engineering frozen unless real-user evidence promotes one scoped issue.",
-  "active_engineering_issue": null,
-  "engineering_queue": [],
+  "primary_objective": "Resolve issue #25 only: align the public site and production deployment with the verified v0.4.1 release truth, then resume the launch loop.",
+  "active_engineering_issue": 25,
+  "engineering_queue": [
+    25
+  ],
   "completed_engineering_issues": [
     4,
     5,
@@ -30,16 +32,16 @@
       "id": "EXP-001",
       "issue": 17,
       "channel": "Hacker News / Show HN",
-      "status": "ready-for-reconciliation-or-publish",
+      "status": "paused-for-public-site-release-truth",
       "published_url": null,
       "product_baseline_frozen": true,
-      "engineering_wip": 0,
-      "next_action": "Reconcile any already-published Show HN item URL/time into issue #17; if none exists, publish only EXP-001. Do not open a second channel before recording its result/decision."
+      "engineering_wip": 1,
+      "next_action": "Resume EXP-001 only after issue #25 is merged, production firstwindow-public is redeployed, and public release-surface acceptance is independently verified."
     }
   },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "v0.4.1 is released and independently checksum-verified. Engineering WIP is zero. Resume issue #17 / EXP-001 only: first reconcile any already-published Show HN URL/time; if none exists, publish that single experiment. Keep the v0.4.1 product baseline frozen until real-user evidence justifies one scoped engineering issue.",
+  "resume_point": "Issue #25 is the only engineering WIP. Fix stale public-site v0.3.0 copy and malformed Hermes/Agnes demo wording, strengthen release-surface regression tests, require PR + main CI/Windows gates, deploy verified main to progress00116/firstwindow-public, independently verify production, then close #25 and resume EXP-001.",
   "last_verified_main_sha": "7a8a223959e12b4a2366efdb5e806d2066019292",
   "evidence": {
     "main_linux_ci_run": 35438404706,
@@ -334,7 +336,9 @@
       "independent_outcome_verification": "pass"
     }
   },
-  "external_blockers": [],
+  "external_blockers": [
+    "Production firstwindow-public is stale until issue #25 is merged and the existing Vercel project is redeployed/verified."
+  ],
   "metadata_notes": [
     "Canonical repository is wookzzz57-beep/first-window.",
     "Repository description is updated.",
