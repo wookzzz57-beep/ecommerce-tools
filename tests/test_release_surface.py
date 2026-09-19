@@ -9,6 +9,8 @@ class ReleaseSurfaceTests(unittest.TestCase):
         self.assertIn("Download latest Windows", html)
         self.assertNotIn("v0.3.0 Release", html)
         self.assertNotIn("Download v0.3.0", html)
+        self.assertNotIn("v0.3.0", html)
+        self.assertIn("v0.4.1", html)
 
     def test_public_site_matches_hermes_first_execution_architecture(self):
         html = Path("site/index.html").read_text(encoding="utf-8")
@@ -17,6 +19,8 @@ class ReleaseSurfaceTests(unittest.TestCase):
         self.assertIn("Agnes API", html)
         self.assertIn("Hermes Agent", app)
         self.assertIn("Agnes API", app)
+        self.assertIn("Hermes Agent via Agnes API", app)
+        self.assertNotIn("Hermes Agent ? Agnes API", app)
         self.assertNotIn("run Agnes Recipe", app)
 
     def test_readme_does_not_describe_released_v04_as_candidate(self):
