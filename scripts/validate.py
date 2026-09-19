@@ -8,7 +8,7 @@ REQUIRED = [
     "docs/EXECUTION_CONTROL.md","docs/DURABLE_STATE.md",
     "src/firstwindow/cli.py","src/firstwindow/gui.py","src/firstwindow/router.py",
     "src/firstwindow/durable.py","src/firstwindow/runners.py","src/firstwindow/bootstrap.py",
-    "src/firstwindow/system_status.py","src/firstwindow/onboarding.py","src/firstwindow/demo_project.py","src/firstwindow/windows_paths.py","src/firstwindow/resume.py","src/firstwindow/distribution.py","src/firstwindow/release_policy.py",
+    "src/firstwindow/system_status.py","src/firstwindow/onboarding.py","src/firstwindow/i18n.py","src/firstwindow/readiness.py","src/firstwindow/demo_project.py","src/firstwindow/windows_paths.py","src/firstwindow/resume.py","src/firstwindow/distribution.py","src/firstwindow/release_policy.py",
     "scripts/check_project_state.py","scripts/firstwindow_gui.py","site/index.html","site/app.js","site/styles.css",
     ".github/workflows/ci.yml",".github/workflows/windows-build.yml",
 ]
