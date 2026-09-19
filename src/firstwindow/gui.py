@@ -18,12 +18,15 @@ from .distribution import beginner_setup_action
 from .durable import append_evidence, create_task, write_checkpoint
 from .i18n import LANGUAGE_NAMES, default_settings_path, load_language, save_language, translate
 from .onboarding import BeginnerState
-from .readiness import build_readiness, probe_command, route_fingerprint
+from .readiness import build_readiness, probe_command, route_fingerprint, setup_watch_expired
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import choose_lane, detect_lanes
 from .runners import agnes_command, hermes_command
 from .system_status import hermes_local_ready, read_hermes_model
 from .windows_paths import refresh_runtime_paths
+
+
+SETUP_WATCH_MAX_POLLS = 200
 
 
 def main(*, ui_self_test: bool = False) -> int:
@@ -53,6 +56,7 @@ def main(*, ui_self_test: bool = False) -> int:
             self.setup_waiting = False
             self.setup_poll_id = None
             self.setup_probe_running = False
+            self.setup_poll_attempts = 0
             self.verified_lane: str | None = None
             self.verified_route = None
 
@@ -493,6 +497,7 @@ def main(*, ui_self_test: bool = False) -> int:
                 return
 
             self.setup_waiting = True
+            self.setup_poll_attempts = 0
             self._append(self._tr("setup.waiting"))
             self.open_hermes()
             messagebox.showinfo(
@@ -510,11 +515,19 @@ def main(*, ui_self_test: bool = False) -> int:
             if not self.setup_waiting:
                 return
             self._refresh_runtime_paths()
+            self.setup_poll_attempts += 1
             _state, _model, report = self._state()
             if report.zero_cost_ready:
                 self.setup_waiting = False
+                self.setup_poll_attempts = 0
                 self.refresh()
                 self._start_ready_probe(report)
+                return
+            if setup_watch_expired(self.setup_poll_attempts, SETUP_WATCH_MAX_POLLS):
+                self.setup_waiting = False
+                self.setup_poll_attempts = 0
+                self._append(self._tr("setup.watch_expired"))
+                self.refresh()
                 return
             self._schedule_setup_poll()
 

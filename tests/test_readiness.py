@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from firstwindow.readiness import build_readiness, probe_command, route_fingerprint
+from firstwindow.readiness import build_readiness, probe_command, route_fingerprint, setup_watch_expired
 
 
 class ReadinessTests(unittest.TestCase):
@@ -51,6 +51,13 @@ class ReadinessTests(unittest.TestCase):
         )
         self.assertTrue(report.zero_cost_ready)
         self.assertEqual(report.ready_lane, "agnes-free")
+
+    def test_setup_watch_has_a_hard_stop(self):
+        self.assertFalse(setup_watch_expired(199, 200))
+        self.assertTrue(setup_watch_expired(200, 200))
+        self.assertTrue(setup_watch_expired(201, 200))
+        with self.assertRaises(ValueError):
+            setup_watch_expired(0, 0)
 
     def test_route_fingerprint_invalidates_changed_or_blocked_route(self):
         local_a = build_readiness(

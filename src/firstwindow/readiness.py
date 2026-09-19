@@ -39,6 +39,12 @@ class ProbeResult:
 RouteFingerprint = tuple[str, str | None, str | None]
 
 
+def setup_watch_expired(attempts: int, max_attempts: int) -> bool:
+    if max_attempts <= 0:
+        raise ValueError("max_attempts must be positive")
+    return attempts >= max_attempts
+
+
 def route_fingerprint(report: ReadinessReport, lane_name: str) -> RouteFingerprint | None:
     """Return the state that a successful probe actually proved.
 
