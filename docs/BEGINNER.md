@@ -1,13 +1,17 @@
 # FirstWindow Beginner Guide
 
-FirstWindow is built around one rule:
+FirstWindow follows one hard rule:
 
 > **$0 Mode never silently falls back to a provider whose cost is unknown.**
+
+It also has one execution rule:
+
+> **Hermes Agent is the primary executor. Agnes API is configured as a Hermes provider. Agnes CLI is optional/advanced only.**
 
 ## Windows — shortest path
 
 1. Download `FirstWindow-Windows-x64.exe` and `SHA256SUMS.txt` from the same GitHub Release.
-2. Optionally verify the download before opening it:
+2. Optionally verify the download:
 
 ```powershell
 Get-FileHash .\FirstWindow-Windows-x64.exe -Algorithm SHA256
@@ -16,43 +20,64 @@ Get-Content .\SHA256SUMS.txt
 
 The two SHA-256 values must match.
 
-3. Open FirstWindow and press **Diagnose**.
-4. Press **Set Up $0 Path**.
-5. If Hermes is missing, FirstWindow opens the **official Hermes Desktop** download page. Download and run the official installer yourself.
-6. In Hermes Desktop, complete the one-time local setup:
-   - Settings → Providers → Local Models
-   - Install runtime
-   - Download a model appropriate for your machine
-   - Click **Use**
-7. Return to FirstWindow and press **Diagnose**.
-8. Choose a project folder, describe the task, and press **Start Building**.
+3. Open FirstWindow and choose **English** or **简体中文**.
+4. Press **Make Me Ready / 一键就绪**.
+5. If Hermes is missing, FirstWindow asks once before running the official installer.
+6. FirstWindow creates or repairs its isolated Hermes profile: `firstwindowzero`.
+7. The profile is created blank. FirstWindow does **not** clone your default Hermes profile or copy its provider credentials.
+8. If `AGNES_API_KEY` is missing from the isolated profile, FirstWindow opens a masked input dialog. Paste the Agnes API key you want this profile to use.
+9. Confirm that the current Agnes API account/key route is free for your account. FirstWindow does not guess billing status.
+10. FirstWindow disables fallback providers and runs a real Agnes-through-Hermes readiness probe.
+11. The probe must return `FIRSTWINDOW_READY`, and Hermes usage evidence must show the expected Agnes model/provider and at least one API call.
+12. Only then can Start/Resume execute on that exact route.
+13. Choose a project folder, describe the task, and press **Start Building**.
 
-Hermes manages its own local llama.cpp runtime and model files. After a model is downloaded, that lane can run locally without an API key.
+If the Agnes cloud lane cannot be verified, FirstWindow can use **Hermes Managed Local** when a validated local model is ready. If neither verified $0 route exists, FirstWindow blocks instead of switching to a paid provider.
 
-### Advanced CLI fallback
+## What “Agnes API via Hermes” means
 
-The GUI keeps **Agnes CLI** and **Hermes CLI** buttons under **Advanced CLI fallback**. Those commands use the official documented installers, show the command before execution, and require explicit confirmation.
+```text
+FirstWindow
+  └─ Hermes Agent
+       ├─ Agnes API         ← primary cloud lane
+       └─ Managed Local     ← local fallback
+```
 
-They are not the default beginner path.
+FirstWindow does not need Agnes CLI to run the primary cloud lane.
 
-## Optional Agnes fast lane
+The direct Agnes CLI installer remains available only under the advanced/manual setup surface for users who intentionally want it.
+## Credential boundary
 
-Use **Get Agnes Desktop** to open the official Agnes Code installation page. Sign in and configure a provider that is free for your account.
+The Agnes key entered in FirstWindow is written only to the isolated `firstwindowzero` Hermes profile.
 
-Because Agnes supports both free and paid providers, FirstWindow does **not** guess. Check **I confirmed my Agnes provider is free** only after verifying that fact.
+FirstWindow does not:
 
-Automatic mode routes:
+- copy the default Hermes `.env`
+- import OpenAI/DeepSeek/OpenRouter keys
+- print the Agnes key to logs
+- pass the secret as a command-line argument
+- silently select another provider if Agnes authentication fails
 
-1. Agnes Free, when explicitly confirmed.
-2. Hermes Local, when a managed local model is detected.
-3. Otherwise: stop. No paid fallback.
+Deleting the isolated profile deletes FirstWindow's stored copy of that key.
+
+## Project-directory safety
+
+Older Hermes one-shot releases had a working-directory bug where file tools could operate in a stale or home directory even when the process was launched from a project folder.
+
+FirstWindow therefore applies several independent pins:
+
+- subprocess cwd = selected project
+- `hermes --in <project>`
+- `--no-restore-cwd`
+- `TERMINAL_CWD=<project>`
+
+A current Hermes release should honor `--in`; the extra environment pin keeps older compatible releases fail-safe.
 
 ## Durable Resume
 
-After selecting a project, FirstWindow scans its durable state for incomplete tasks. If one exists, the GUI shows its stage and checkpoint next action.
+Every task gets repository-local durable state under `.firstwindow/tasks/<task_id>/`.
 
-Press **Resume** to continue the existing task ID from repository state. Verified-complete tasks are excluded. Existing evidence is append-only and is treated as untrusted historical data, not as a new instruction channel.
-
+FirstWindow records the objective, acceptance criteria, checkpoint, next action, evidence, and execution attestation. Resume continues the same task ID from that state instead of relying on hidden chat history.
 CLI equivalent:
 
 ```bash
@@ -60,9 +85,37 @@ firstwindow tasks --project .
 firstwindow resume <task_id> --project .
 ```
 
+## Verification: execution is not completion
+
+For the default beginner task, FirstWindow creates two acceptance criteria:
+
+1. **AC-001** — agent execution completed through the verified route.
+2. **AC-002** — the requested task outcome was independently verified.
+
+The executor can automatically cover AC-001. It cannot automatically cover AC-002 merely by saying “done”.
+
+Until independent evidence is recorded:
+
+```text
+COVERED AC-001
+UNCOVERED AC-002
+NOT VERIFIED
+```
+
+After an actual check is recorded for AC-002, `firstwindow verify` can become VERIFIED.
+
+For custom workflows, supply explicit acceptance criteria:
+
+```bash
+firstwindow run "Add a /health endpoint" \
+  --accept "tests pass" \
+  --accept "GET /health returns 200"
+```
+
+Then attach real evidence to the corresponding criterion IDs before verification.
 ## Demo Project
 
-Press **Create Demo** in the GUI, or run:
+Press **Create Demo** or run:
 
 ```bash
 firstwindow demo
@@ -70,25 +123,28 @@ firstwindow demo
 
 ## What FirstWindow automates
 
-- runtime detection
-- $0 routing policy
+- Hermes runtime detection/install flow
+- isolated Hermes → Agnes API provider configuration
+- strict no-fallback $0 routing
+- live readiness probe
+- Hermes usage attestation
+- project-directory pinning
 - task/checkpoint/evidence state
-- resume discovery
-- agent launch
-- deterministic acceptance verification
-- safe demo creation
+- durable resume
+- verification coverage reporting
 
 ## What remains intentionally interactive
 
-- downloading/running the official Desktop installer
-- Agnes account/provider authentication
-- Hermes local-model selection/download
-- deciding whether a provider is free for your account
+- approving runtime installation
+- entering your Agnes API key
+- confirming that your Agnes account/key route is free
+- choosing/downloading a Hermes local model when using local fallback
+- providing or approving independent evidence for task-specific acceptance
 
-FirstWindow does not capture provider credentials or silently choose a large model.
+These interactions are deliberate security/cost boundaries, not missing automation.
 
 ## Windows SmartScreen and signing
 
-The v0.3 community binary is currently **unsigned**. Windows SmartScreen can therefore show an unknown-publisher warning.
+The community binary may be unsigned. Windows SmartScreen can therefore show an unknown-publisher warning.
 
-FirstWindow does not claim otherwise. The Release includes `SHA256SUMS.txt`, generated by GitHub Actions from the exact packaged EXE. Code signing remains a future distribution improvement and requires a real signing identity/certificate.
+FirstWindow does not claim otherwise. The Release includes `SHA256SUMS.txt`, generated from the packaged EXE so you can verify the download.

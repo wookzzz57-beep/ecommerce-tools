@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 — Hermes-First Agnes API Execution
+
+- Made Hermes Agent the primary executor; Agnes API is configured as a Hermes provider instead of requiring Agnes CLI for the beginner path.
+- Added an isolated `firstwindowzero` Hermes profile with official Agnes API configuration and `fallback_providers=[]`.
+- Stopped cloning the default Hermes profile; fresh setup starts without copied provider credentials.
+- Added masked, explicit Agnes API key entry stored only in the isolated FirstWindow Hermes profile.
+- Added live readiness proof and exact route-fingerprint gating before GUI Start/Resume.
+- Added Hermes usage attestation so an unexpected provider/model or zero API calls fails closed.
+- Pinned agent tool execution to the selected project with cwd, `--in`, `--no-restore-cwd`, and `TERMINAL_CWD` to protect older Hermes one-shot builds.
+- Separated route execution evidence from independent task-outcome acceptance; agent exit 0 alone no longer verifies a task.
+- Kept Hermes Managed Local as the verified $0 fallback and direct Agnes CLI as advanced/manual only.
+- Added English / Simplified Chinese live switching, one-click readiness repair, and release-focused regression coverage.
+
 ## 0.3.0 — Verified Resume & Trusted Distribution
 
 - Added task schema v2 with stable acceptance criterion IDs.

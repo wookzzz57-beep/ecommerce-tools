@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import platform as platform_module
+import subprocess
+from typing import Any, Callable, Sequence
+
+
+INSTALLER_TIMEOUT_SECONDS = 600
 
 
 @dataclass(frozen=True)
@@ -10,6 +15,39 @@ class SetupAction:
     label: str
     command: tuple[str, ...]
     requires_confirmation: bool = True
+
+
+@dataclass(frozen=True)
+class InstallerOutcome:
+    exit_code: int | None
+    timed_out: bool
+    error: str | None = None
+
+
+def run_installer_command(
+    command: Sequence[str],
+    *,
+    timeout_seconds: int = INSTALLER_TIMEOUT_SECONDS,
+    creationflags: int = 0,
+    runner: Callable[..., Any] = subprocess.run,
+) -> InstallerOutcome:
+    """Run one allowlisted installer with a hard upper bound.
+
+    FirstWindow must never leave the beginner GUI waiting forever on a network
+    installer. A timeout is a truthful blocked state, not a successful install.
+    """
+    try:
+        completed = runner(
+            list(command),
+            check=False,
+            timeout=timeout_seconds,
+            creationflags=creationflags,
+        )
+    except subprocess.TimeoutExpired:
+        return InstallerOutcome(exit_code=None, timed_out=True, error="timeout")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return InstallerOutcome(exit_code=None, timed_out=False, error=str(exc))
+    return InstallerOutcome(exit_code=int(getattr(completed, "returncode", 1)), timed_out=False)
 
 
 def _platform_name(value: str | None = None) -> str:
@@ -52,15 +90,14 @@ def setup_actions(
     agnes_installed: bool,
     hermes_installed: bool,
 ) -> list[SetupAction]:
+    """Return beginner-path prerequisites.
+
+    Hermes is the only required agent runtime. Agnes CLI is intentionally not
+    part of this list: the primary cloud lane is Agnes API configured inside
+    Hermes, while direct Agnes CLI remains an explicit advanced fallback.
+    """
+    del agnes_installed  # retained for API compatibility with older callers
     actions: list[SetupAction] = []
-    if not agnes_installed:
-        actions.append(
-            SetupAction(
-                target="agnes",
-                label="Install Agnes Code",
-                command=tuple(install_command(_platform_name(platform_name), "agnes")),
-            )
-        )
     if not hermes_installed:
         actions.append(
             SetupAction(

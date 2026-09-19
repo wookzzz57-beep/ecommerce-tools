@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from firstwindow.cli import resume, tasks
+from firstwindow.cli import resume, run, tasks
 from firstwindow.durable import create_task, write_checkpoint
 from firstwindow.router import Lane
 
@@ -28,6 +28,36 @@ class CliResumeTests(unittest.TestCase):
             self.assertIn("resume-1", text)
             self.assertIn("agent-failed", text)
             self.assertIn("Continue from failing checkout test", text)
+
+    def test_run_default_acceptance_keeps_outcome_unverified(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            args = argparse.Namespace(
+                project=project,
+                task_id="run-default",
+                task="Create output",
+                accept=None,
+                engine=None,
+                allow_unknown_cost=False,
+                model=None,
+                dry_run=True,
+            )
+            lane = Lane(
+                name="hermes-local",
+                engine="hermes",
+                zero_cost=True,
+                available=True,
+                reason="test",
+                provider="llamacpp",
+                model="local",
+            )
+            with patch("firstwindow.cli._lanes", return_value=[lane]), redirect_stdout(io.StringIO()):
+                code = run(args)
+            self.assertEqual(code, 0)
+            task = (
+                project / ".firstwindow" / "tasks" / "run-default" / "task.json"
+            ).read_text(encoding="utf-8")
+            self.assertIn("Requested task outcome is independently verified.", task)
 
     def test_resume_dry_run_uses_existing_task_id_without_recreating_task(self):
         with tempfile.TemporaryDirectory() as tmp:

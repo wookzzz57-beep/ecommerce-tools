@@ -43,6 +43,12 @@ jobs:
           $p = Start-Process -FilePath ".\dist\FirstWindow-Windows-x64.exe" -ArgumentList "--self-test" -PassThru -Wait
           if ($p.ExitCode -ne 0) { throw "Packaged self-test failed with exit code $($p.ExitCode)" }
 
+      - name: Run packaged UI language self-test
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath ".\dist\FirstWindow-Windows-x64.exe" -ArgumentList "--ui-self-test" -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Packaged UI language self-test failed with exit code $($p.ExitCode)" }
+
       - name: Write SHA256SUMS.txt
         shell: pwsh
         run: |

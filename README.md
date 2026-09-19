@@ -2,71 +2,103 @@
 
 > **Your first coding agent. One window. A verified $0 path. No surprise API bill.**
 
-FirstWindow is a beginner-first launcher over **Agnes Code + Hermes Agent**. It hides provider plumbing, keeps a strict $0 guard, persists task/checkpoint/evidence state, and refuses to treat an agent's “done” message as proof by itself.
+FirstWindow is a beginner-first Windows launcher with **Hermes Agent as the primary executor**.
+
+The primary cloud path is:
+
+```text
+FirstWindow control + durable state
+        ↓
+Hermes Agent
+        ↓
+Agnes API
+```
+
+Direct Agnes CLI is **not** a beginner-path dependency. It remains an explicit advanced/manual fallback only.
 
 [Download Windows](../../releases/latest/download/FirstWindow-Windows-x64.exe) · [Beginner Guide](docs/BEGINNER.md)
 
-
 ## Real Windows demo
 
-The GIF below is a real capture of the current **v0.4 Windows candidate** from PR #20, showing live **English ↔ 简体中文** switching. It is not a mockup or generated UI. The full-size screenshot below remains the released v0.3 package until v0.4 clears end-to-end acceptance.
+The GIF below is a real capture of the current **v0.4 Windows candidate** from PR #20, showing live **English ↔ 简体中文** switching. It is not a mockup or generated UI. The full-size screenshot below remains the released v0.3 package until v0.4 clears the remote release gates.
 
 ![FirstWindow English and Simplified Chinese language switch demo](docs/assets/firstwindow-startup.gif)
 
 [Open the full-size released v0.3 app screenshot](docs/assets/firstwindow-window.png)
 
-## The problem
+## Execution architecture
 
-Coding agents are powerful, but the first experience is fragmented:
-
-- install a runtime
-- understand providers and API billing
-- configure a local model
-- open terminals
-- recover a half-finished task
-- verify whether “done” is actually done
-
-FirstWindow turns that into:
+FirstWindow owns routing, checkpoints, evidence, resume state, and final verification. Hermes owns agent execution.
 
 ```text
-Download → Diagnose → Set Up $0 Path → Choose Folder → Describe Task → Start
+1. Agnes API via isolated Hermes profile
+   └─ only after explicit $0 confirmation + live probe + usage attestation
+
+2. Hermes Managed Local
+   └─ local fallback when a validated local model is ready
+
+3. BLOCK
+   └─ no silent paid/cloud fallback
 ```
 
-## Why two runtimes?
+The Agnes profile is named `firstwindowzero`. FirstWindow creates it **blank** instead of cloning the default Hermes profile, configures the official Agnes API endpoint/model, and forces `fallback_providers=[]`.
 
-**Agnes Free** is the fast cloud lane when you have explicitly verified a free provider.
+If an Agnes API key is missing, Make Me Ready asks the user to paste it explicitly. Only `AGNES_API_KEY` is written to the isolated profile; FirstWindow never copies OpenAI, DeepSeek, OpenRouter, or other credentials from the user's default Hermes profile.
 
-**Hermes Local** is the durable local fallback. Current Hermes Desktop manages its own Local Models runtime and downloads, so FirstWindow v0.3 does not require Ollama as the default beginner path.
+## Windows beginner path
 
-Automatic mode:
+Open the EXE and use:
 
 ```text
-Agnes Free (confirmed)
-        ↓ unavailable
-Hermes Managed Local
-        ↓ unavailable
-BLOCK — no silent paid fallback
+Choose Language → Make Me Ready → Choose Folder → Describe Task → Start Building
 ```
 
-## Windows beginner distribution
+**Make Me Ready / 一键就绪** does the deterministic work:
 
-GitHub Actions builds a single-file `FirstWindow-Windows-x64.exe`.
+- installs Hermes through the official installer only after explicit confirmation
+- creates/repairs the isolated `firstwindowzero` profile
+- disables Hermes fallback providers for the Agnes $0 route
+- requests the Agnes API key only when that isolated profile has none
+- requires the user to confirm the current Agnes account/API route is free
+- runs a real readiness prompt and requires `FIRSTWINDOW_READY`
+- validates Hermes usage evidence against the expected Agnes model/provider
+- refuses Start/Resume unless the exact route fingerprint has passed the live probe
+FirstWindow also pins Hermes tool execution to the selected project using process cwd, `--in`, `--no-restore-cwd`, and `TERMINAL_CWD`. This protects older Hermes one-shot builds that could otherwise execute file tools in a stale/home workspace.
 
-Open it and you get:
+If any prerequisite, installer, API call, provider attestation, model check, or route proof fails, FirstWindow stays blocked.
 
-- **Diagnose** — detect installed runtimes and whether a verified $0 lane is ready
-- **Set Up $0 Path** — opens the official Hermes Desktop flow when Hermes is missing
-- **Get Agnes Desktop / Get Hermes Desktop** — official browser-based beginner install path
-- **Advanced CLI fallback** — documented PowerShell installers remain available only by explicit choice
-- **Create Demo** — generate a safe first project
-- **Choose Folder**
-- **Runtime: Automatic / Agnes Free / Hermes Local**
-- **Start Building**
-- **Resume** — continue the newest incomplete durable task from its checkpoint without replaying completed work
-- live run output plus durable task/checkpoint/evidence records
+## Durable tasks: done is not proof
 
-> The v0.3 community EXE is currently unsigned, so Windows SmartScreen may show an unknown-publisher warning. Download `SHA256SUMS.txt` from the same Release to verify the exact packaged EXE.
+Each task stores durable state under the selected project:
 
+- objective and acceptance criteria
+- checkpoint + next action
+- append-only evidence
+- Hermes usage attestation
+- resume context
+
+Default tasks deliberately separate two facts:
+
+- **AC-001** — the agent process completed through the verified execution route
+- **AC-002** — the requested task outcome was independently verified
+
+A successful Hermes/Agnes run covers AC-001 only. `firstwindow verify` remains **NOT VERIFIED** until independent evidence covers AC-002. An agent saying “done” or exiting with code 0 is not sufficient by itself.
+
+## Windows features
+
+- English / 简体中文 live language switching with persisted preference
+- Diagnose
+- Make Me Ready / 一键就绪
+- Automatic / Agnes API via Hermes / Hermes Local routing
+- Create Demo
+- Choose Folder
+- Start Building
+- Resume from durable checkpoint
+- live execution output and evidence ledger
+- fail-closed $0 guard
+- Advanced CLI fallback for explicit/manual use only
+
+The community Windows binary may be unsigned, so SmartScreen can show an unknown-publisher warning. Verify the EXE against `SHA256SUMS.txt` from the same Release.
 ## Python install
 
 ```bash
@@ -83,101 +115,27 @@ firstwindow doctor
 firstwindow-gui
 ```
 
-CLI helpers:
+Useful CLI commands:
 
 ```bash
 firstwindow setup
 firstwindow setup --install hermes --yes
 firstwindow demo
-firstwindow run "Add a /health endpoint and test it" --accept "tests pass" --accept "GET /health returns 200"
+
+# Custom acceptance criteria require explicit evidence for each criterion.
+firstwindow run "Add a /health endpoint and test it" \
+  --accept "tests pass" \
+  --accept "GET /health returns 200"
+
 firstwindow tasks --project .
 firstwindow resume <task_id> --project .
 firstwindow evidence <task_id> --criterion AC-001 --kind test --detail "tests passed"
+firstwindow evidence <task_id> --criterion AC-002 --kind probe --detail "GET /health -> 200"
 firstwindow verify <task_id>
 ```
 
-## Durable state
-
-Each task lives under:
-
-```text
-.firstwindow/tasks/<task_id>/
-├── task.json
-├── checkpoint.json
-└── evidence.jsonl
-```
-
-New tasks use stable acceptance IDs and criterion-level evidence coverage. Existing v0.1/v0.2 state remains readable without automatic rewriting.
-
-See [Durable State Contract](docs/DURABLE_STATE.md) for schema compatibility and verification semantics.
-
-Chat output is working context. Durable repository state is the recovery source.
-
-### Durable Resume
-
-`firstwindow tasks` lists incomplete tasks only. Verified-complete tasks are excluded and `firstwindow resume` refuses to resume them.
-
-Resume prompts are rebuilt from `task.json`, `checkpoint.json`, and append-only evidence. The checkpoint `next_action` is the primary continuation point; existing passing evidence is included so the agent is instructed not to replay completed work or repeat already-evidenced side effects unless the checkpoint requires it.
-
-## $0 Guard
-
-FirstWindow does **not** claim every Agnes provider is free. Agnes supports free and paid providers. Agnes is eligible for `$0 Mode` only after explicit user confirmation.
-
-For Hermes, FirstWindow reads only the non-secret model configuration:
-
-```text
-hermes config get model --json
-```
-
-A managed `llamacpp` Local Model is treated as a local lane. FirstWindow does not read Hermes credential files.
-
 ## Security boundaries
 
-- no API keys stored by FirstWindow
-- no automatic paid fallback
-- beginner setup opens official Desktop download pages instead of silently executing remote scripts
-- advanced CLI installers remain fixed to documented Agnes/Hermes commands and require explicit confirmation
-- unsafe task IDs/path traversal are rejected
-- worker output is not acceptance evidence
-- no shutdown, restart, sleep, or power operations
+FirstWindow does not silently choose an unknown-cost provider, clone a user's general Hermes credentials, treat configuration as readiness, or treat executor success as task completion.
 
-## Contributor control plane
-
-Substantial work starts from:
-
-1. `AGENTS.md` — hard project boundaries.
-2. `PROJECT_STATE.json` — current phase, active issue, queue, blockers, and resume point.
-3. `docs/EXECUTION_CONTROL.md` — preflight, long-task, anti-drift, and acceptance gates.
-4. the active GitHub issue — implementation scope and acceptance criteria.
-
-One primary engineering issue is allowed per implementation branch.
-
-## Verification
-
-Linux CI runs:
-
-```bash
-python scripts/check_project_state.py
-python scripts/validate.py
-python -m compileall -q src scripts tests
-PYTHONPATH=src python -m unittest discover -s tests -v
-```
-
-Windows CI additionally:
-
-- imports Tkinter
-- builds the single-file EXE with PyInstaller
-- launches the packaged EXE in `--self-test` mode
-- generates `SHA256SUMS.txt`
-- uploads the EXE + checksum as CI artifacts
-- publishes a Release only from a `v*` tag whose version matches `pyproject.toml`
-
-## Roadmap
-
-- richer progress stream
-- code-signed Windows binaries
-- macOS packaged app
-- free-quota detection where a provider exposes reliable data
-- beginner project templates
-
-MIT licensed.
+The product goal is a small beginner surface backed by fail-closed routing, explicit credential/cost boundaries, real execution probes, durable recovery, and evidence-based acceptance.
