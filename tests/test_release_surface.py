@@ -24,6 +24,14 @@ class ReleaseSurfaceTests(unittest.TestCase):
         self.assertNotIn("Hermes Agent ? Agnes API", app)
         self.assertNotIn("run Agnes Recipe", app)
 
+    def test_public_site_has_share_and_discovery_metadata(self):
+        html = Path("site/index.html").read_text(encoding="utf-8")
+        self.assertIn('rel="canonical" href="https://firstwindow-public.vercel.app/"', html)
+        self.assertIn('property="og:title" content="FirstWindow — Your first coding agent for Windows"', html)
+        self.assertIn('name="twitter:card" content="summary_large_image"', html)
+        self.assertIn('"@type":"SoftwareApplication"', html)
+        self.assertIn("https://github.com/wookzzz57-beep/first-window/discussions", html)
+
     def test_vercel_root_rewrite_works_with_clean_urls(self):
         config = json.loads(Path("vercel.json").read_text(encoding="utf-8"))
         self.assertTrue(config.get("cleanUrls"))
