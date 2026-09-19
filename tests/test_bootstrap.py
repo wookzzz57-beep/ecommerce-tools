@@ -85,7 +85,7 @@ class BootstrapTests(unittest.TestCase):
         paths = runtime_path_candidates(
             "windows",
             "agnes",
-            {"LOCALAPPDATA": r"C:\\Users\\demo\\AppData\\Local"},
+            {"LOCALAPPDATA": r"C:\Users\demo\AppData\Local"},
         )
         normalized = [str(path).replace("\\", "/").lower() for path in paths]
         self.assertEqual(normalized, ["c:/users/demo/appdata/local/agnes/bin"])
