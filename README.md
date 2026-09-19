@@ -9,11 +9,11 @@ FirstWindow is a beginner-first launcher over **Agnes Code + Hermes Agent**. It 
 
 ## Real Windows demo
 
-This is a real capture of the current Windows package built from `main` — not a mockup or generated UI.
+The GIF below is a real capture of the current **v0.4 Windows candidate** from PR #20, showing live **English ↔ 简体中文** switching. It is not a mockup or generated UI. The full-size screenshot below remains the released v0.3 package until v0.4 clears end-to-end acceptance.
 
-![FirstWindow startup demo](docs/assets/firstwindow-startup.gif)
+![FirstWindow English and Simplified Chinese language switch demo](docs/assets/firstwindow-startup.gif)
 
-[Open the full-size real app screenshot](docs/assets/firstwindow-window.png)
+[Open the full-size released v0.3 app screenshot](docs/assets/firstwindow-window.png)
 
 ## The problem
 
