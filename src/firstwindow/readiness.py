@@ -80,6 +80,7 @@ def probe_command(
     env: Mapping[str, str] | None = None,
     runner: Callable[..., Any] = subprocess.run,
     timeout: int = 180,
+    expected_text: str | None = None,
 ) -> ProbeResult:
     try:
         completed = runner(
@@ -108,4 +109,9 @@ def probe_command(
         ) if part
     )
     code = int(getattr(completed, "returncode", 1))
-    return ProbeResult(code == 0, code, output[-4000:], "ok" if code == 0 else f"exit-{code}")
+    tail = output[-4000:]
+    if code != 0:
+        return ProbeResult(False, code, tail, f"exit-{code}")
+    if expected_text is not None and expected_text not in output:
+        return ProbeResult(False, code, tail, "expected-output-missing")
+    return ProbeResult(True, code, tail, "ok")
