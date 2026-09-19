@@ -59,6 +59,9 @@ def scoped_env(
 ) -> dict[str, str]:
     env = dict(os.environ if base is None else base)
     if profile_home:
+        # The FirstWindow Agnes profile owns its credential boundary. Do not let
+        # an ambient process-level AGNES_API_KEY override the isolated .env.
+        env.pop(AGNES_KEY_ENV, None)
         env["HERMES_HOME"] = str(profile_home)
     return env
 

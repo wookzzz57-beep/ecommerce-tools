@@ -284,7 +284,7 @@ def main(*, ui_self_test: bool = False) -> int:
             return env
 
         def _current_agnes_key_fingerprint(self) -> str | None:
-            return agnes_api_key_fingerprint(self.agnes_route.profile_home, self._env())
+            return agnes_api_key_fingerprint(self.agnes_route.profile_home, {})
 
         def _set_agnes_free_confirmed(self, confirmed: bool) -> None:
             fingerprint = self._current_agnes_key_fingerprint() if confirmed else None
@@ -659,6 +659,7 @@ def main(*, ui_self_test: bool = False) -> int:
                     env,
                     hermes_model=model,
                     agnes_route=self.agnes_route,
+                    agnes_credential_present=bool(self._current_agnes_key_fingerprint()),
                     agnes_capabilities=read_agnes_capabilities(),
                 ),
                 zero_cost=True,

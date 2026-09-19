@@ -17,6 +17,7 @@ from firstwindow.hermes_agnes import (
     parse_profile_path,
     read_hermes_agnes_route,
     save_agnes_api_key,
+    scoped_env,
 )
 
 
@@ -127,6 +128,15 @@ class HermesAgnesTests(unittest.TestCase):
                 self.assertIsNone(agnes_api_key_fingerprint(profile, {}))
                 self.assertTrue(agnes_api_key_present(profile, None))
                 self.assertIsNotNone(agnes_api_key_fingerprint(profile, None))
+
+    def test_scoped_profile_env_removes_ambient_agnes_key(self):
+        env = scoped_env(r"C:\\Hermes\\profiles\\firstwindowzero", {
+            AGNES_KEY_ENV: "ambient-secret",
+            "KEEP_ME": "yes",
+        })
+        self.assertNotIn(AGNES_KEY_ENV, env)
+        self.assertEqual(env["KEEP_ME"], "yes")
+        self.assertEqual(env["HERMES_HOME"], r"C:\\Hermes\\profiles\\firstwindowzero")
 
     def test_key_fingerprint_changes_without_exposing_secret(self):
         with tempfile.TemporaryDirectory() as tmp:

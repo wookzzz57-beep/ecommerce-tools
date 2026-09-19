@@ -40,7 +40,7 @@
   },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "Issue #22 remains the only engineering WIP. v0.4.1 exact-source local release gates pass on LAPTOP-RF3RT9HP: 109/109 tests, validate/state/compile, source self-test and bilingual UI self-test; real Hermes -> Agnes API readiness probe passed with credential-bound fingerprint and usage attestation; minimal task fw-v041-release-e2e used agnes-2.5-flash with 2 API calls, remained NOT VERIFIED until independent filesystem evidence, then VERIFIED; exact-source Windows packaged self-test/UI self-test pass; candidate EXE bytes=10594481, SHA-256=577a3937ed93325c8f170161e519a920d216d6ee568bbb937f75c8146de818fc. Remote branch 7aa14c5 is clean against b8eefeab; next update this final state evidence, require PR CI + Windows App, merge only after both pass, then require verified main before v0.4.1 tag.",
+  "resume_point": "Issue #22 remains the only engineering WIP. Final pre-PR local hardening passes on LAPTOP-RF3RT9HP: 111/111 tests, validate/state/compile, source self-test and bilingual UI self-test; credential isolation now removes ambient process AGNES_API_KEY whenever the isolated Hermes profile is scoped; an adversarial probe with a deliberately wrong ambient key still passed Hermes -> Agnes API using the isolated profile credential with usage attestation; packaged self/UI tests pass; candidate EXE bytes=10596323, SHA-256=5b0b9f5ab0f6a3ce031ff2fd67bee9135f0ade48f564da9c839c3a5bdf9d3bc6. Previous PR #23 green checks are superseded by this credential-boundary change; push the exact source, require fresh CI + Windows App on the new head, then merge only if both pass.",
   "last_verified_main_sha": "b8eefeabdc5f9340fe7fd1ed346ce0934155afbb",
   "evidence": {
     "main_linux_ci_run": 35435480264,
@@ -241,7 +241,7 @@
       "independent_outcome_verification": "pass"
     },
     "issue_22": {
-      "status": "local-release-candidate-ready-for-pr-ci",
+      "status": "final-local-hardening-ready-for-fresh-pr-ci",
       "baseline_sha": "b8eefeabdc5f9340fe7fd1ed346ce0934155afbb",
       "branch": "issue-22-v041-hardening",
       "scope": [
@@ -252,7 +252,7 @@
         "README/site release truth"
       ],
       "real_device": "LAPTOP-RF3RT9HP",
-      "local_unit_tests": "109/109 pass",
+      "local_unit_tests": "111/111 pass",
       "local_validate": "pass",
       "local_project_state": "pass",
       "local_compile": "pass",
@@ -279,11 +279,21 @@
       },
       "local_packaged_self_test_exit": 0,
       "local_packaged_ui_self_test_exit": 0,
-      "local_candidate_exe_bytes": 10594481,
-      "local_candidate_exe_sha256": "577a3937ed93325c8f170161e519a920d216d6ee568bbb937f75c8146de818fc",
+      "local_candidate_exe_bytes": 10596323,
+      "local_candidate_exe_sha256": "5b0b9f5ab0f6a3ce031ff2fd67bee9135f0ade48f564da9c839c3a5bdf9d3bc6",
       "managed_local_real_device_e2e": "not-claimed; no ready managed-local model on LAPTOP-RF3RT9HP",
       "exact_source_line_endings_preserved": true,
-      "remote_code_head_before_final_state": "7aa14c5be5d23aeca5849abd951f95f124ed96f0"
+      "remote_code_head_before_final_state": "7aa14c5be5d23aeca5849abd951f95f124ed96f0",
+      "ambient_process_agnes_key_isolation": {
+        "wrong_ambient_key_injected": true,
+        "ambient_key_removed_from_scoped_env": true,
+        "isolated_profile_key_present": true,
+        "live_probe": "pass",
+        "usage_attestation": "pass",
+        "model": "agnes-2.5-flash",
+        "api_calls": 1
+      },
+      "previous_pr_gate_note": "PR #23 checks on bee4e786 passed but are superseded by the ambient-key isolation patch; fresh final-head checks required."
     }
   },
   "external_blockers": [],
@@ -304,6 +314,7 @@
     "a ready Hermes Managed Local lane is not blocked by a missing Agnes key",
     "Resume UI stays disabled without both a resumable task and exact live-route proof",
     "empty explicit environment mappings never inherit process credentials or routing flags",
+    "ambient process AGNES_API_KEY cannot override the isolated FirstWindow profile credential",
     "real Hermes -> Agnes API readiness/task execution is attested with actual API usage",
     "task outcome remains unverified until independent acceptance evidence exists",
     "Windows package build, packaged self-test, packaged UI self-test, and SHA-256 generation pass",
