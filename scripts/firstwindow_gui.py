@@ -9,7 +9,8 @@ def self_test() -> int:
     import tkinter  # noqa: F401
     from firstwindow.bootstrap import install_command
     from firstwindow.distribution import beginner_setup_action
-    from firstwindow.durable import create_task
+    from firstwindow.durable import create_task, default_acceptance
+    from firstwindow.hermes_agnes import HermesAgnesRoute
     from firstwindow.i18n import translate
     from firstwindow.readiness import build_readiness
     from firstwindow.resume import discover_resumable_tasks
@@ -20,11 +21,30 @@ def self_test() -> int:
     assert "hermes-agent.nousresearch.com" in beginner_setup_action("hermes").target
     assert parse_hermes_model_json('{"provider":"llamacpp","default":"demo"}')["provider"] == "llamacpp"
     assert translate("zh-CN", "button.one_click_ready") == "一键就绪"
-    report = build_readiness(agnes_installed=False, agnes_free_confirmed=False, agnes_headless_ready=False, hermes_installed=True, hermes_model={"provider": "agnes", "default": "cloud"})
-    assert report.zero_cost_ready is False and report.action == "configure-hermes-local"
+    blocked_route = HermesAgnesRoute(
+        hermes_installed=True,
+        provider_configured=False,
+        selected=False,
+        no_fallbacks=False,
+        ready=False,
+        model=None,
+        base_url=None,
+        key_env=None,
+        profile_home=None,
+        reason="self-test-not-configured",
+    )
+    report = build_readiness(
+        agnes_free_confirmed=False,
+        agnes_route=blocked_route,
+        hermes_installed=True,
+        hermes_model={"provider": "agnes", "default": "cloud"},
+    )
+    assert report.zero_cost_ready is False and report.action == "prepare-agnes-profile"
+    acceptance = default_acceptance()
+    assert len(acceptance) == 2 and "independently verified" in acceptance[1]
     with tempfile.TemporaryDirectory() as tmp:
         project = Path(tmp)
-        create_task(project, "self-test", "resume smoke test", ["Agent process exits successfully."])
+        create_task(project, "self-test", "resume smoke test", acceptance)
         assert discover_resumable_tasks(project)[0].task_id == "self-test"
     return 0
 

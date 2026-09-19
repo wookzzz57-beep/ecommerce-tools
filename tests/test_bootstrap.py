@@ -62,9 +62,11 @@ class BootstrapTests(unittest.TestCase):
         self.assertFalse(outcome.timed_out)
         self.assertIn("network launcher unavailable", outcome.error or "")
 
-    def test_setup_actions_only_include_missing_runtimes(self):
+    def test_beginner_setup_requires_hermes_not_agnes_cli(self):
         actions = setup_actions(platform_name="windows", agnes_installed=False, hermes_installed=True)
-        self.assertEqual([item.target for item in actions], ["agnes"])
+        self.assertEqual(actions, [])
+        actions = setup_actions(platform_name="windows", agnes_installed=True, hermes_installed=False)
+        self.assertEqual([item.target for item in actions], ["hermes"])
         self.assertTrue(actions[0].requires_confirmation)
 
     def test_unknown_platform_is_rejected(self):

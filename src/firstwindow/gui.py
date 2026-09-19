@@ -15,14 +15,18 @@ import webbrowser
 from .bootstrap import INSTALLER_TIMEOUT_SECONDS, install_command, run_installer_command
 from .demo_project import create_demo_project
 from .distribution import beginner_setup_action
-from .durable import append_evidence, create_task, write_checkpoint
+from .durable import EXECUTION_ACCEPTANCE, append_evidence, create_task, default_acceptance, write_checkpoint
 from .i18n import LANGUAGE_NAMES, default_settings_path, load_language, save_language, translate
+from .hermes_agnes import (
+    AGNES_MODEL, agnes_api_key_present, attest_hermes_usage, ensure_firstwindow_agnes_profile,
+    read_firstwindow_agnes_route, save_agnes_api_key, scoped_env,
+)
 from .onboarding import BeginnerState
-from .readiness import build_readiness, probe_command, route_fingerprint, setup_watch_expired
+from .readiness import build_readiness, probe_command, route_fingerprint, route_is_verified, setup_watch_expired
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import choose_lane, detect_lanes
-from .runners import agnes_command, hermes_command
-from .system_status import AgnesCapabilities, hermes_local_ready, read_agnes_capabilities, read_hermes_model
+from .runners import agnes_command, hermes_command, hermes_usage_path, project_env
+from .system_status import hermes_local_ready, read_agnes_capabilities, read_hermes_model
 from .windows_paths import refresh_runtime_paths
 
 
@@ -31,7 +35,7 @@ SETUP_WATCH_MAX_POLLS = 200
 
 def main(*, ui_self_test: bool = False) -> int:
     import tkinter as tk
-    from tkinter import filedialog, messagebox, ttk
+    from tkinter import filedialog, messagebox, simpledialog, ttk
 
     class App:
         def __init__(self, root: tk.Tk):
@@ -59,7 +63,7 @@ def main(*, ui_self_test: bool = False) -> int:
             self.setup_poll_attempts = 0
             self.verified_lane: str | None = None
             self.verified_route = None
-            self.agnes_capabilities = AgnesCapabilities(False, None, False, "not-probed")
+            self.agnes_route = read_firstwindow_agnes_route()
 
             self._build()
             self._apply_language(initial=True)
@@ -250,7 +254,7 @@ def main(*, ui_self_test: bool = False) -> int:
         def _refresh_runtime_choices(self, state: BeginnerState) -> None:
             labels = self._runtime_labels()
             choices = ["auto"]
-            if state.agnes_headless_ready:
+            if state.agnes_api_ready:
                 choices.append("agnes-free")
             choices.append("hermes-local")
             if self.runtime_key not in choices:
@@ -268,28 +272,28 @@ def main(*, ui_self_test: bool = False) -> int:
             self.log.see("end")
             self.log.configure(state="disabled")
 
-        def _env(self) -> dict[str, str]:
+        def _env(self, lane=None) -> dict[str, str]:
             env = dict(os.environ)
             if self.agnes_free_var.get():
                 env["FIRSTWINDOW_AGNES_FREE_CONFIRMED"] = "1"
             else:
                 env.pop("FIRSTWINDOW_AGNES_FREE_CONFIRMED", None)
+            if lane is not None and getattr(lane, "profile_home", None):
+                env = scoped_env(lane.profile_home, env)
             return env
 
         def _state(self):
             model = read_hermes_model()
-            self.agnes_capabilities = read_agnes_capabilities()
+            self.agnes_route = read_firstwindow_agnes_route()
             state = BeginnerState(
-                agnes_installed=self.agnes_capabilities.installed,
+                agnes_api_ready=self.agnes_route.ready,
                 agnes_free_confirmed=bool(self.agnes_free_var.get()),
-                agnes_headless_ready=self.agnes_capabilities.headless_recipe_ready,
                 hermes_installed=shutil.which("hermes") is not None,
                 hermes_local_ready=hermes_local_ready(model),
             )
             report = build_readiness(
-                agnes_installed=state.agnes_installed,
                 agnes_free_confirmed=state.agnes_free_confirmed,
-                agnes_headless_ready=state.agnes_headless_ready,
+                agnes_route=self.agnes_route,
                 hermes_installed=state.hermes_installed,
                 hermes_model=model,
             )
@@ -312,24 +316,26 @@ def main(*, ui_self_test: bool = False) -> int:
                     self.verified_lane = None
                     self.verified_route = None
             local_name = str(model.get("default") or model.get("model") or "")
-            agnes_text = self._tr("status.installed") if state.agnes_installed else self._tr("status.not_installed")
-            if state.agnes_installed and not state.agnes_headless_ready:
-                agnes_text += " · " + self._tr("status.automation_unavailable")
-            elif state.agnes_installed and state.agnes_free_confirmed:
-                agnes_text += " · " + self._tr("status.zero_confirmed")
-            self.agnes_check.configure(state="normal" if state.agnes_headless_ready else "disabled")
+            if self.agnes_route.ready:
+                agnes_text = self._tr("status.agnes_api_ready", model=self.agnes_route.model or AGNES_MODEL)
+                if state.agnes_free_confirmed:
+                    agnes_text += " ? " + self._tr("status.zero_confirmed")
+            elif state.hermes_installed:
+                agnes_text = self._tr("status.agnes_api_setup_needed")
+            else:
+                agnes_text = self._tr("status.hermes_required")
+            self.agnes_check.configure(state="normal" if self.agnes_route.ready else "disabled")
 
             hermes_text = self._tr("status.not_installed")
             if state.hermes_installed:
                 hermes_text = self._tr("status.installed")
                 if state.hermes_local_ready:
-                    hermes_text += " · " + self._tr("status.local_ready", model=local_name)
+                    hermes_text += " ? " + self._tr("status.local_ready", model=local_name)
                 else:
                     provider = str(model.get("provider") or "").strip()
                     configured_model = str(model.get("default") or model.get("model") or "").strip()
                     if provider and configured_model:
-                        hermes_text += f" · {provider}/{configured_model}"
-                    hermes_text += " · " + self._tr("status.choose_local")
+                        hermes_text += f" ? {provider}/{configured_model}"
 
             status_text = self._tr(
                 "status.summary",
@@ -345,10 +351,19 @@ def main(*, ui_self_test: bool = False) -> int:
                 self.next_var.set(self._tr("next.ready"))
             elif report.action == "install-hermes":
                 self.next_var.set(self._tr("next.install"))
+            elif report.action == "confirm-agnes-free":
+                self.next_var.set(self._tr("next.confirm_agnes"))
             else:
-                self.next_var.set(self._tr("next.configure"))
+                self.next_var.set(self._tr("next.prepare_agnes"))
 
             self.refresh_resume()
+            verified = bool(
+                self.verified_lane
+                and route_is_verified(report, self.verified_lane, self.verified_lane, self.verified_route)
+            )
+            self.start_button.configure(state="normal" if verified and not self.running else "disabled")
+            if not verified:
+                self.resume_button.configure(state="disabled")
 
         def choose_project(self) -> None:
             path = filedialog.askdirectory(title=self._tr("choose.project"))
@@ -500,6 +515,12 @@ def main(*, ui_self_test: bool = False) -> int:
             self._refresh_runtime_paths()
             _state, _model, report = self._state()
 
+            if self.agnes_route.ready and not agnes_api_key_present(
+                self.agnes_route.profile_home, self._env()
+            ):
+                self._configure_agnes_api_key()
+                return
+
             if report.zero_cost_ready:
                 self.setup_waiting = False
                 self._start_ready_probe(report)
@@ -515,15 +536,62 @@ def main(*, ui_self_test: bool = False) -> int:
                     self.open_beginner_setup("hermes")
                 return
 
-            self.setup_waiting = True
-            self.setup_poll_attempts = 0
-            self._append(self._tr("setup.waiting"))
-            self.open_hermes()
-            messagebox.showinfo(
-                self._tr("dialog.one_click"),
-                self._tr("setup.hermes_local_required"),
+            if report.action == "prepare-agnes-profile":
+                self._prepare_agnes_profile()
+                return
+
+            if report.action == "confirm-agnes-free":
+                if messagebox.askyesno(
+                    self._tr("confirm.agnes_free.title"),
+                    self._tr("confirm.agnes_free"),
+                ):
+                    self.agnes_free_var.set(True)
+                    self.refresh()
+                    _state, _model, confirmed = self._state()
+                    self._start_ready_probe(confirmed)
+                return
+
+            self.refresh()
+
+        def _configure_agnes_api_key(self) -> None:
+            profile_home = self.agnes_route.profile_home
+            if not profile_home:
+                messagebox.showerror(
+                    self._tr("dialog.setup"),
+                    self._tr("setup.agnes_key_profile_missing"),
+                )
+                return
+            secret = simpledialog.askstring(
+                self._tr("setup.agnes_key_title"),
+                self._tr("setup.agnes_key_prompt"),
+                show="*",
+                parent=self.root,
             )
-            self._schedule_setup_poll()
+            if secret is None:
+                return
+            try:
+                save_agnes_api_key(profile_home, secret)
+            except Exception as exc:
+                messagebox.showerror(self._tr("dialog.setup"), str(exc))
+                return
+            secret = ""
+            self._append(self._tr("setup.agnes_key_saved"))
+            self.refresh()
+            self.root.after(100, self.setup_zero_path)
+
+        def _prepare_agnes_profile(self) -> None:
+            self.one_click_button.configure(state="disabled")
+            self._append(self._tr("setup.agnes_profile_preparing"))
+
+            def worker():
+                try:
+                    result = ensure_firstwindow_agnes_profile()
+                except Exception as exc:
+                    self.events.put(("agnes_profile_error", str(exc)))
+                    return
+                self.events.put(("agnes_profile_done", result))
+
+            threading.Thread(target=worker, daemon=True).start()
 
         def _schedule_setup_poll(self) -> None:
             if self.setup_poll_id is None and self.setup_waiting:
@@ -566,10 +634,24 @@ def main(*, ui_self_test: bool = False) -> int:
         def _lane(self, env, *, preferred: str | None = None):
             model = read_hermes_model()
             return choose_lane(
-                detect_lanes(env, hermes_model=model, agnes_capabilities=self.agnes_capabilities),
+                detect_lanes(
+                    env,
+                    hermes_model=model,
+                    agnes_route=self.agnes_route,
+                    agnes_capabilities=read_agnes_capabilities(),
+                ),
                 zero_cost=True,
                 preferred=preferred if preferred is not None else self._preferred(),
             )
+
+        def _verified_lane(self, env):
+            lane = self._lane(env)
+            _state, _model, report = self._state()
+            if not route_is_verified(
+                report, lane.name, self.verified_lane, self.verified_route
+            ):
+                raise RuntimeError(self._tr("error.readiness_required"))
+            return lane
 
         def _command(self, project: Path, task_id: str, prompt: str, lane):
             if lane.engine == "agnes":
@@ -583,7 +665,7 @@ def main(*, ui_self_test: bool = False) -> int:
                     prompt,
                     lane.model,
                     provider=lane.provider,
-                    isolate_user_config=bool(lane.zero_cost),
+                    isolate_user_config=lane.name == "hermes-local",
                 )
             )
 
@@ -596,12 +678,13 @@ def main(*, ui_self_test: bool = False) -> int:
                 self.refresh()
                 return
 
-            env = self._env()
+            base_env = self._env()
             try:
-                lane = self._lane(env, preferred=report.ready_lane)
+                lane = self._lane(base_env, preferred=report.ready_lane)
             except Exception as exc:
                 messagebox.showerror(self._tr("dialog.guard"), str(exc))
                 return
+            env = self._env(lane)
 
             self.setup_probe_running = True
             self.one_click_button.configure(state="disabled")
@@ -625,10 +708,31 @@ def main(*, ui_self_test: bool = False) -> int:
                         result = probe_command(
                             command,
                             project,
-                            env=env,
+                            env=project_env(project, env),
                             timeout=300,
                             expected_text="FIRSTWINDOW_READY",
                         )
+                        if result.passed and lane.name == "agnes-free":
+                            attestation = attest_hermes_usage(
+                                hermes_usage_path(project, "readiness-probe"),
+                                expected_model=lane.model or AGNES_MODEL,
+                            )
+                            if not attestation.passed:
+                                result = type(result)(
+                                    False,
+                                    result.exit_code,
+                                    result.output,
+                                    f"usage-{attestation.reason}",
+                                )
+                            else:
+                                result = type(result)(
+                                    True,
+                                    result.exit_code,
+                                    result.output
+                                    + f"\nUSAGE_ATTESTED provider={attestation.provider} "
+                                      f"model={attestation.model} api_calls={attestation.api_calls}",
+                                    "ok",
+                                )
                 except Exception as exc:
                     self.events.put(("probe_error", (lane.name, str(exc))))
                     return
@@ -660,29 +764,45 @@ def main(*, ui_self_test: bool = False) -> int:
                         text=True,
                         encoding="utf-8",
                         errors="replace",
-                        env=env,
+                        env=project_env(project, env),
                     )
                     if process.stdout:
                         for line in process.stdout:
                             self.events.put(("log", line.rstrip()))
                     code = process.wait()
+                    passed = code == 0
+                    attestation_detail = ""
+                    if lane.name == "agnes-free":
+                        attestation = attest_hermes_usage(
+                            hermes_usage_path(project, task_id),
+                            expected_model=lane.model or AGNES_MODEL,
+                        )
+                        passed = passed and attestation.passed
+                        attestation_detail = (
+                            f" provider={attestation.provider} model={attestation.model} "
+                            f"api_calls={attestation.api_calls} attestation={attestation.reason}"
+                        )
+                        if not attestation.passed:
+                            self.events.put(
+                                ("log", self._tr("log.usage_attestation_failed", reason=attestation.reason))
+                            )
                     append_evidence(
                         project,
                         task_id,
                         "resume-agent-exit" if resume_mode else "agent-exit",
-                        code == 0,
-                        f"{lane.name} {'resume_' if resume_mode else ''}exit_code={code}",
+                        passed,
+                        f"{lane.name} {'resume_' if resume_mode else ''}exit_code={code}{attestation_detail}",
                         criteria=criteria,
                     )
                     write_checkpoint(
                         project,
                         task_id,
-                        "agent-finished" if code == 0 else "agent-failed",
-                        "Review evidence and verify."
-                        if code == 0
+                        "agent-finished" if passed else "agent-failed",
+                        "Collect independent outcome evidence, then verify."
+                        if passed
                         else "Inspect failure and resume from the latest checkpoint.",
                     )
-                    result_text = self._tr("result.finished") if code == 0 else self._tr("result.failed")
+                    result_text = self._tr("result.finished") if passed else self._tr("result.failed")
                     self.events.put(
                         (
                             "done",
@@ -712,15 +832,16 @@ def main(*, ui_self_test: bool = False) -> int:
             if not task:
                 messagebox.showerror(self._tr("dialog.task"), self._tr("error.describe_task"))
                 return
-            env = self._env()
+            base_env = self._env()
             try:
-                lane = self._lane(env)
+                lane = self._verified_lane(base_env)
             except Exception as exc:
                 messagebox.showerror(self._tr("dialog.guard"), str(exc))
                 return
+            env = self._env(lane)
 
             task_id = f"fw-{uuid.uuid4().hex[:10]}"
-            create_task(project, task_id, task, ["Agent process exits successfully."])
+            create_task(project, task_id, task, default_acceptance())
             write_checkpoint(project, task_id, "dispatching", f"Run with {lane.name}.")
             self._launch(project, task_id, task, lane, env, resume_mode=False, criteria=["AC-001"])
 
@@ -738,7 +859,9 @@ def main(*, ui_self_test: bool = False) -> int:
             try:
                 context = load_resume_context(project, self.resume_candidate.task_id)
                 prompt = build_resume_prompt(context)
-                lane = self._lane(self._env())
+                base_env = self._env()
+                lane = self._verified_lane(base_env)
+                lane_env = self._env(lane)
             except Exception as exc:
                 messagebox.showerror(self._tr("dialog.resume"), str(exc))
                 return
@@ -755,16 +878,17 @@ def main(*, ui_self_test: bool = False) -> int:
                 return
 
             criteria = None
-            acceptance = context.get("acceptance") or []
-            if len(acceptance) == 1 and acceptance[0].get("text") == "Agent process exits successfully.":
-                criteria = [acceptance[0]["id"]]
+            for item in context.get("acceptance") or []:
+                if item.get("text") in {"Agent process exits successfully.", EXECUTION_ACCEPTANCE}:
+                    criteria = [item["id"]]
+                    break
             write_checkpoint(project, context["task_id"], "resuming", context["next_action"])
             self._launch(
                 project,
                 context["task_id"],
                 prompt,
                 lane,
-                self._env(),
+                lane_env,
                 resume_mode=True,
                 criteria=criteria,
             )
@@ -781,6 +905,25 @@ def main(*, ui_self_test: bool = False) -> int:
                     elif kind == "continue_setup":
                         self.one_click_button.configure(state="normal")
                         self.root.after(100, self.setup_zero_path)
+                    elif kind == "agnes_profile_done":
+                        result = payload
+                        self.one_click_button.configure(state="normal")
+                        if result.ready:
+                            self._append(self._tr("setup.agnes_profile_ready"))
+                            self.refresh()
+                            self.root.after(100, self.setup_zero_path)
+                        else:
+                            self._append(self._tr("setup.agnes_profile_failed", reason=result.reason))
+                            messagebox.showerror(
+                                self._tr("dialog.setup"),
+                                self._tr("setup.agnes_profile_failed", reason=result.reason),
+                            )
+                            self.refresh()
+                    elif kind == "agnes_profile_error":
+                        self.one_click_button.configure(state="normal")
+                        self._append(self._tr("setup.agnes_profile_failed", reason=payload))
+                        messagebox.showerror(self._tr("dialog.setup"), str(payload))
+                        self.refresh()
                     elif kind == "installer_blocked":
                         target, reason = payload
                         self.one_click_button.configure(state="normal")
@@ -851,7 +994,7 @@ def main(*, ui_self_test: bool = False) -> int:
             assert app.language == "zh-CN"
             assert app.one_click_button.cget("text") == translate("zh-CN", "button.one_click_ready")
             assert app.language_label.cget("text") == translate("zh-CN", "label.language")
-            if not app.agnes_capabilities.headless_recipe_ready:
+            if not app.agnes_route.ready:
                 assert translate("zh-CN", "runtime.agnes_free") not in tuple(app.runtime_combo["values"])
             assert load_language(settings_path, system_locale="en") == "zh-CN"
             root.destroy()

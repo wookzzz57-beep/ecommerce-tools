@@ -10,6 +10,20 @@ from typing import Any, Sequence
 
 _TASK_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
+EXECUTION_ACCEPTANCE = "Agent process exits successfully through the verified route."
+OUTCOME_ACCEPTANCE = "Requested task outcome is independently verified."
+
+
+def default_acceptance() -> list[str]:
+    """Separate transport success from actual task acceptance.
+
+    The executor may prove AC-001 automatically. AC-002 deliberately remains
+    uncovered until a distinct check/evidence record proves the requested
+    outcome. This prevents `exit 0` or an agent saying "done" from becoming
+    task-complete evidence.
+    """
+    return [EXECUTION_ACCEPTANCE, OUTCOME_ACCEPTANCE]
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()

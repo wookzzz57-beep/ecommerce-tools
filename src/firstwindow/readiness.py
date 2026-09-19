@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 from typing import Any, Callable, Mapping, Sequence
 
+from .hermes_agnes import HermesAgnesRoute
 from .system_status import hermes_local_ready
 
 
@@ -16,6 +17,7 @@ class EngineReadiness:
     zero_cost_ready: bool
     provider: str | None = None
     model: str | None = None
+    base_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -36,7 +38,7 @@ class ProbeResult:
     reason: str
 
 
-RouteFingerprint = tuple[str, str | None, str | None]
+RouteFingerprint = tuple[str, str | None, str | None, str | None]
 
 
 def setup_watch_expired(attempts: int, max_attempts: int) -> bool:
@@ -46,42 +48,60 @@ def setup_watch_expired(attempts: int, max_attempts: int) -> bool:
 
 
 def route_fingerprint(report: ReadinessReport, lane_name: str) -> RouteFingerprint | None:
-    """Return the state that a successful probe actually proved.
-
-    A proof is valid only while the same zero-cost route remains eligible.
-    Hermes includes provider/model identity so changing the local model
-    invalidates stale UI proof instead of continuing to display READY.
-    """
     if lane_name == "agnes-free":
         if not report.agnes.zero_cost_ready:
             return None
-        return ("agnes-free", None, None)
+        return (
+            "agnes-free",
+            report.agnes.provider,
+            report.agnes.model,
+            report.agnes.base_url,
+        )
     if lane_name == "hermes-local":
         if not report.hermes.zero_cost_ready:
             return None
-        return ("hermes-local", report.hermes.provider, report.hermes.model)
+        return (
+            "hermes-local",
+            report.hermes.provider,
+            report.hermes.model,
+            report.hermes.base_url,
+        )
     return None
+
+
+def route_is_verified(
+    report: ReadinessReport,
+    lane_name: str,
+    verified_lane: str | None,
+    verified_route: RouteFingerprint | None,
+) -> bool:
+    """Require a live probe proof for the exact route about to execute."""
+    current = route_fingerprint(report, lane_name)
+    return bool(current and verified_lane == lane_name and verified_route == current)
 
 
 def build_readiness(
     *,
-    agnes_installed: bool,
     agnes_free_confirmed: bool,
-    agnes_headless_ready: bool,
+    agnes_route: HermesAgnesRoute,
     hermes_installed: bool,
     hermes_model: Mapping[str, Any],
 ) -> ReadinessReport:
     provider = str(hermes_model.get("provider") or "").strip() or None
     model = str(hermes_model.get("default") or hermes_model.get("model") or "").strip() or None
+    base_url = str(hermes_model.get("base_url") or "").strip() or None
     hermes_configured = bool(provider and model)
     hermes_zero = bool(hermes_installed and hermes_local_ready(hermes_model))
-    agnes_zero = bool(agnes_installed and agnes_headless_ready and agnes_free_confirmed)
+    agnes_zero = bool(hermes_installed and agnes_route.ready and agnes_free_confirmed)
 
     agnes = EngineReadiness(
-        engine="agnes",
-        installed=agnes_installed,
-        configured=bool(agnes_installed and agnes_headless_ready),
+        engine="hermes",
+        installed=hermes_installed,
+        configured=bool(agnes_route.provider_configured and agnes_route.selected),
         zero_cost_ready=agnes_zero,
+        provider="agnes" if agnes_route.provider_configured else None,
+        model=agnes_route.model,
+        base_url=agnes_route.base_url,
     )
     hermes = EngineReadiness(
         engine="hermes",
@@ -90,6 +110,7 @@ def build_readiness(
         zero_cost_ready=hermes_zero,
         provider=provider,
         model=model,
+        base_url=base_url,
     )
 
     if agnes_zero:
@@ -98,7 +119,9 @@ def build_readiness(
         return ReadinessReport("ready", "verify", True, "hermes-local", agnes, hermes)
     if not hermes_installed:
         return ReadinessReport("blocked", "install-hermes", False, None, agnes, hermes)
-    return ReadinessReport("blocked", "configure-hermes-local", False, None, agnes, hermes)
+    if agnes_route.ready and not agnes_free_confirmed:
+        return ReadinessReport("blocked", "confirm-agnes-free", False, None, agnes, hermes)
+    return ReadinessReport("blocked", "prepare-agnes-profile", False, None, agnes, hermes)
 
 
 def probe_command(
@@ -124,7 +147,10 @@ def probe_command(
         )
     except subprocess.TimeoutExpired as exc:
         text = "\n".join(
-            part for part in (str(getattr(exc, "stdout", "") or ""), str(getattr(exc, "stderr", "") or "")) if part
+            part for part in (
+                str(getattr(exc, "stdout", "") or ""),
+                str(getattr(exc, "stderr", "") or ""),
+            ) if part
         )
         return ProbeResult(False, None, text[-4000:], "timeout")
     except (OSError, subprocess.SubprocessError) as exc:

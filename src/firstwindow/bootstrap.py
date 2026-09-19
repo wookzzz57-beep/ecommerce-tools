@@ -90,15 +90,14 @@ def setup_actions(
     agnes_installed: bool,
     hermes_installed: bool,
 ) -> list[SetupAction]:
+    """Return beginner-path prerequisites.
+
+    Hermes is the only required agent runtime. Agnes CLI is intentionally not
+    part of this list: the primary cloud lane is Agnes API configured inside
+    Hermes, while direct Agnes CLI remains an explicit advanced fallback.
+    """
+    del agnes_installed  # retained for API compatibility with older callers
     actions: list[SetupAction] = []
-    if not agnes_installed:
-        actions.append(
-            SetupAction(
-                target="agnes",
-                label="Install Agnes Code",
-                command=tuple(install_command(_platform_name(platform_name), "agnes")),
-            )
-        )
     if not hermes_installed:
         actions.append(
             SetupAction(

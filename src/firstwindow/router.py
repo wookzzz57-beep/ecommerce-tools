@@ -5,6 +5,7 @@ import os
 import shutil
 from typing import Any, Mapping
 
+from .hermes_agnes import HermesAgnesRoute
 from .system_status import AgnesCapabilities, hermes_local_ready, read_agnes_capabilities
 
 _TRUTHY = {"1", "true", "yes", "on"}
@@ -19,6 +20,7 @@ class Lane:
     reason: str
     provider: str | None = None
     model: str | None = None
+    profile_home: str | None = None
 
 
 def _truthy(value: str | None) -> bool:
@@ -33,14 +35,20 @@ def detect_lanes(
     env: Mapping[str, str] | None = None,
     *,
     hermes_model: Mapping[str, Any] | None = None,
+    agnes_route: HermesAgnesRoute | None = None,
     agnes_capabilities: AgnesCapabilities | None = None,
 ) -> list[Lane]:
     env = env or os.environ
-    agnes = command_exists("agnes")
     hermes = command_exists("hermes")
+    agnes_cli = command_exists("agnes")
     capabilities = agnes_capabilities or read_agnes_capabilities()
-    agnes_automation = bool(agnes and capabilities.installed and capabilities.headless_recipe_ready)
+    agnes_cli_automation = bool(
+        agnes_cli and capabilities.installed and capabilities.headless_recipe_ready
+    )
     agnes_free = _truthy(env.get("FIRSTWINDOW_AGNES_FREE_CONFIRMED"))
+
+    route = agnes_route
+    agnes_api_ready = bool(hermes and route and route.ready and agnes_free)
 
     managed_local = hermes_local_ready(hermes_model or {})
     manual_local = (
@@ -56,21 +64,27 @@ def detect_lanes(
         ).strip()
     manual_model = (env.get("FIRSTWINDOW_LOCAL_MODEL") or "").strip()
 
+    if route and route.ready:
+        agnes_reason = (
+            "Hermes isolated Agnes API profile is ready and this account route is explicitly confirmed free."
+            if agnes_free
+            else "Hermes isolated Agnes API profile is ready; confirm that the current Agnes account route is free."
+        )
+    elif route:
+        agnes_reason = f"Requires an isolated Hermes -> Agnes API profile ({route.reason})."
+    else:
+        agnes_reason = "Requires an isolated Hermes -> Agnes API profile."
+
     return [
         Lane(
             "agnes-free",
-            "agnes",
+            "hermes",
             True,
-            agnes_automation and agnes_free,
-            (
-                "Agnes headless recipe runner detected and its configured provider is explicitly confirmed free."
-                if agnes_automation and agnes_free
-                else (
-                    f"Agnes is installed but automatic recipe execution is unavailable ({capabilities.reason})."
-                    if agnes
-                    else "Requires Agnes CLI, headless recipe support, and explicit free-provider confirmation."
-                )
-            ),
+            agnes_api_ready,
+            agnes_reason,
+            "agnes" if route else None,
+            route.model if route else None,
+            route.profile_home if route else None,
         ),
         Lane(
             "hermes-local",
@@ -90,14 +104,14 @@ def detect_lanes(
             managed_model if managed_local else (manual_model or None),
         ),
         Lane(
-            "agnes-configured",
+            "agnes-cli-configured",
             "agnes",
             False,
-            agnes_automation,
+            agnes_cli_automation,
             (
-                "Uses the provider configured in Agnes; cost is not guaranteed to be $0."
-                if agnes_automation
-                else f"Agnes automatic recipe execution is unavailable ({capabilities.reason})."
+                "Advanced direct Agnes CLI runner is available; cost is not guaranteed."
+                if agnes_cli_automation
+                else f"Direct Agnes CLI automation is unavailable ({capabilities.reason})."
             ),
         ),
         Lane(

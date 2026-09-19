@@ -195,6 +195,50 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 }
 
 
+# FirstWindow v0.4 execution-route terminology. Kept as a post-table update so
+# both catalogs stay structurally identical while older keys remain compatible.
+TRANSLATIONS["en"].update({
+    "runtime.agnes_free": "Agnes API via Hermes",
+    "checkbox.agnes_free": "I confirmed this Agnes API route is free for my account",
+    "status.agnes_api_ready": "Agnes API profile configured in Hermes ({model}); live probe required",
+    "status.agnes_api_setup_needed": "Agnes API isolated profile needs setup",
+    "status.hermes_required": "install Hermes first",
+    "next.confirm_agnes": "Agnes API is isolated through Hermes. Confirm the current account route is free, then FirstWindow will verify it.",
+    "next.prepare_agnes": "Make Me Ready will create or repair an isolated Hermes profile for Agnes API and remove all fallback providers.",
+    "confirm.agnes_free.title": "Confirm $0 Agnes route",
+    "confirm.agnes_free": "FirstWindow found the official Agnes API route through an isolated Hermes profile. Agnes publicly offers a Free/default API tier, but account billing can vary. Confirm that this API key/account route should be treated as $0 for this run.",
+    "setup.agnes_profile_preparing": "Preparing an isolated Hermes profile for Agnes API with fallback providers disabled...",
+    "setup.agnes_profile_ready": "Isolated Hermes -> Agnes API profile is ready; fallback providers are disabled.",
+    "setup.agnes_profile_failed": "Could not prepare the isolated Agnes API profile: {reason}",
+    "setup.agnes_key_title": "Configure Agnes API key",
+    "setup.agnes_key_prompt": "Paste your Agnes API key. It is stored only in FirstWindow's isolated Hermes profile; keys are never copied from your default Hermes profile.",
+    "setup.agnes_key_saved": "Agnes API key saved only to the isolated FirstWindow Hermes profile.",
+    "setup.agnes_key_profile_missing": "The isolated Hermes profile is unavailable. Run Make Me Ready again.",
+    "log.usage_attestation_failed": "Execution evidence rejected: Hermes actually used an unexpected provider/model ({reason}).",
+    "error.readiness_required": "This exact route has not passed the live readiness probe. Click Make Me Ready first; FirstWindow will not run on configuration alone.",
+})
+TRANSLATIONS["zh-CN"].update({
+    "runtime.agnes_free": 'Agnes API（通过 Hermes）',
+    "checkbox.agnes_free": '我已确认当前 Agnes API 通道对本账号为免费',
+    "status.agnes_api_ready": 'Agnes API 已配置到 Hermes（{model}）；仍需通过真实探测',
+    "status.agnes_api_setup_needed": '需要准备隔离的 Agnes API 执行配置',
+    "status.hermes_required": '请先安装 Hermes',
+    "next.confirm_agnes": 'Agnes API 已通过 Hermes 隔离。确认当前账号通道为免费后，FirstWindow 将进行真实验证。',
+    "next.prepare_agnes": '“一键就绪”将创建或修复 Agnes API 专用 Hermes 配置，并关闭所有 fallback provider。',
+    "confirm.agnes_free.title": '确认 $0 Agnes 通道',
+    "confirm.agnes_free": 'FirstWindow 已找到通过隔离 Hermes 配置运行的 Agnes 官方 API。Agnes 公开提供 Free/default API 层，但具体账号计费可能不同。请确认本次 API Key/账号通道应按 $0 使用。',
+    "setup.agnes_profile_preparing": '正在准备 Agnes API 专用 Hermes 配置，并关闭 fallback provider…',
+    "setup.agnes_profile_ready": 'Hermes -> Agnes API 隔离配置已就绪；fallback provider 已关闭。',
+    "setup.agnes_profile_failed": '无法准备 Agnes API 隔离配置：{reason}',
+    "setup.agnes_key_title": '配置 Agnes API Key',
+    "setup.agnes_key_prompt": '粘贴你的 Agnes API Key。它只会保存到 FirstWindow 专用的隔离 Hermes profile；FirstWindow 不会从默认 Hermes profile 复制任何 Key。',
+    "setup.agnes_key_saved": 'Agnes API Key 已仅保存到 FirstWindow 专用隔离 Hermes profile。',
+    "setup.agnes_key_profile_missing": '找不到 FirstWindow 隔离 Hermes profile，请重新点击“一键就绪”。',
+    "log.usage_attestation_failed": '执行证据被拒绝：Hermes 实际使用了非预期 provider/model（{reason}）。',
+    "error.readiness_required": '当前执行通道尚未通过真实就绪探测。请先点击“一键就绪”；FirstWindow 不会仅凭配置状态直接执行。',
+})
+
+
 def normalize_language(value: str | None) -> str:
     normalized = (value or "").strip().replace("_", "-").lower()
     if normalized.startswith("zh"):

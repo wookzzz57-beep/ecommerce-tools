@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 
-from firstwindow.runners import agnes_command, hermes_command
+from firstwindow.runners import agnes_command, hermes_command, project_env
 
 
 class RunnerTests(unittest.TestCase):
@@ -20,6 +20,21 @@ class RunnerTests(unittest.TestCase):
             self.assertIn("--provider", command)
             self.assertIn("custom", command)
             self.assertIn("qwen3.5:9b", command)
+
+    def test_project_env_overrides_stale_terminal_cwd(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            env = project_env(project, {"TERMINAL_CWD": r"C:\wrong", "HERMES_HOME": r"C:\profile"})
+            self.assertEqual(Path(env["TERMINAL_CWD"]), project.resolve())
+            self.assertEqual(env["HERMES_HOME"], r"C:\profile")
+
+    def test_hermes_command_pins_project_directory_and_disables_cwd_restore(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            command = list(hermes_command(project, "cwd", "touch fixture", "agnes-2.5-flash", provider="agnes"))
+            self.assertIn("--in", command)
+            self.assertEqual(Path(command[command.index("--in") + 1]), project)
+            self.assertIn("--no-restore-cwd", command)
 
     def test_hermes_managed_local_can_use_saved_provider_without_override(self):
         with tempfile.TemporaryDirectory() as tmp:

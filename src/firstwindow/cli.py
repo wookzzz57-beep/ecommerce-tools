@@ -11,10 +11,11 @@ import uuid
 
 from .bootstrap import INSTALLER_TIMEOUT_SECONDS, install_command, run_installer_command, setup_actions
 from .demo_project import create_demo_project
-from .durable import append_evidence, create_task, verification_report, write_checkpoint
+from .durable import (EXECUTION_ACCEPTANCE, append_evidence, create_task, default_acceptance, verification_report, write_checkpoint)
+from .hermes_agnes import AGNES_MODEL, attest_hermes_usage, read_firstwindow_agnes_route, scoped_env
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
 from .router import Lane, choose_lane, detect_lanes
-from .runners import agnes_command, hermes_command, run_command
+from .runners import agnes_command, hermes_command, hermes_usage_path, project_env, run_command
 from .system_status import read_agnes_capabilities, read_hermes_model
 
 
@@ -29,7 +30,27 @@ def _lanes(env: dict[str, str] | None = None):
     return detect_lanes(
         env or os.environ,
         hermes_model=read_hermes_model(),
+        agnes_route=read_firstwindow_agnes_route(),
         agnes_capabilities=read_agnes_capabilities(),
+    )
+
+
+def _lane_env(
+    lane: Lane,
+    project: Path,
+    env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    base = dict(env or os.environ)
+    scoped = scoped_env(lane.profile_home, base) if lane.profile_home else base
+    return project_env(project, scoped)
+
+
+def _attest_lane_usage(project: Path, task_id: str, lane: Lane):
+    if lane.name != "agnes-free":
+        return None
+    return attest_hermes_usage(
+        hermes_usage_path(project, task_id),
+        expected_model=lane.model or AGNES_MODEL,
     )
 
 
@@ -52,17 +73,14 @@ def _agent_command(
         prompt,
         model,
         provider=lane.provider,
-        isolate_user_config=bool(lane.zero_cost),
+        isolate_user_config=lane.name == "hermes-local",
     )
 
 
 def _default_exit_criterion(context: dict) -> list[str] | None:
-    acceptance = context.get("acceptance") or []
-    if len(acceptance) != 1:
-        return None
-    item = acceptance[0]
-    if item.get("text") == "Agent process exits successfully.":
-        return [item["id"]]
+    for item in context.get("acceptance") or []:
+        if item.get("text") in {"Agent process exits successfully.", EXECUTION_ACCEPTANCE}:
+            return [item["id"]]
     return None
 
 
@@ -76,8 +94,8 @@ def doctor() -> int:
 
     if not any(lane.available and lane.zero_cost for lane in lanes):
         print("\n$0 Guard active: FirstWindow will not silently use an unknown-cost provider.")
-        print("Recommended: install Hermes Desktop, then choose Settings → Providers → Local Models → Use.")
-        print("Alternative: configure Agnes with a free provider and explicitly confirm it.")
+        print("Primary path: Hermes Agent with the isolated Agnes API provider profile.")
+        print("Fallback: a verified Hermes managed local model. Direct Agnes CLI is advanced/optional only.")
     return 0
 
 
@@ -116,13 +134,14 @@ def setup(args: argparse.Namespace) -> int:
         hermes_installed=hermes_installed,
     )
     if not actions:
-        print("Agnes and Hermes are installed.")
+        print("Hermes Agent is installed; the beginner path does not require Agnes CLI.")
     else:
         print("Guided setup plan:")
         for index, action in enumerate(actions, start=1):
             print(f"{index}. {action.label}")
             print("   " + " ".join(action.command))
-    print("\nRecommended $0 fallback: Hermes Desktop → Local Models → Install runtime → Download → Use.")
+    print("\nPrimary: Make Me Ready configures Agnes API inside an isolated Hermes profile.")
+    print("Fallback: Hermes Desktop → Local Models. Direct Agnes CLI is optional/advanced only.")
     return 0
 
 
@@ -146,12 +165,12 @@ def tasks(args: argparse.Namespace) -> int:
 def run(args: argparse.Namespace) -> int:
     project = args.project
     task_id = args.task_id or f"fw-{uuid.uuid4().hex[:10]}"
-    default_acceptance = args.accept is None
+    uses_default_acceptance = args.accept is None
     create_task(
         project,
         task_id,
         args.task,
-        args.accept or ["Agent process exits successfully."],
+        args.accept or default_acceptance(),
     )
     try:
         lane = choose_lane(
@@ -167,29 +186,43 @@ def run(args: argparse.Namespace) -> int:
         return 2
 
     write_checkpoint(project, task_id, "dispatching", f"Run with {lane.name}.")
-    code = run_command(command, project, dry_run=args.dry_run)
+    lane_env = _lane_env(lane, project)
+    code = run_command(command, project, dry_run=args.dry_run, env=lane_env)
     if args.dry_run:
         append_evidence(project, task_id, "dry-run", False, "Command planned only; agent was not executed.")
         write_checkpoint(project, task_id, "dry-run", "Execute the task without --dry-run to collect runtime evidence.")
         print(f"task_id={task_id}\nlane={lane.name}\ndry_run=true")
         return 0
 
+    attestation = _attest_lane_usage(project, task_id, lane)
+    passed = code == 0 and (attestation is None or attestation.passed)
+    detail = f"{lane.name} exit_code={code}"
+    if attestation is not None:
+        detail += (
+            f" provider={attestation.provider} model={attestation.model}"
+            f" api_calls={attestation.api_calls} attestation={attestation.reason}"
+        )
     append_evidence(
         project,
         task_id,
         "agent-exit",
-        code == 0,
-        f"{lane.name} exit_code={code}",
-        criteria=["AC-001"] if default_acceptance else None,
+        passed,
+        detail,
+        criteria=["AC-001"] if uses_default_acceptance else None,
     )
     write_checkpoint(
         project,
         task_id,
-        "agent-finished" if code == 0 else "agent-failed",
-        "Review evidence and run firstwindow verify." if code == 0 else "Inspect failure and resume.",
+        "agent-finished" if passed else "agent-failed",
+        "Collect independent outcome evidence, then run firstwindow verify." if passed else "Inspect failure and resume.",
     )
     print(f"task_id={task_id}\nlane={lane.name}")
-    return code
+    if attestation is not None:
+        print(
+            f"attestation={attestation.reason} provider={attestation.provider} "
+            f"model={attestation.model} api_calls={attestation.api_calls}"
+        )
+    return code if passed else (code or 3)
 
 
 def resume(args: argparse.Namespace) -> int:
@@ -206,29 +239,43 @@ def resume(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return 2
 
+    lane_env = _lane_env(lane, args.project)
     if args.dry_run:
-        code = run_command(command, args.project, dry_run=True)
+        code = run_command(command, args.project, dry_run=True, env=lane_env)
         print(f"task_id={args.task_id}\nlane={lane.name}\nresume=true\ndry_run=true")
         return code
 
     write_checkpoint(args.project, args.task_id, "resuming", context["next_action"])
-    code = run_command(command, args.project, dry_run=False)
+    code = run_command(command, args.project, dry_run=False, env=lane_env)
+    attestation = _attest_lane_usage(args.project, args.task_id, lane)
+    passed = code == 0 and (attestation is None or attestation.passed)
+    detail = f"{lane.name} resume_exit_code={code}"
+    if attestation is not None:
+        detail += (
+            f" provider={attestation.provider} model={attestation.model}"
+            f" api_calls={attestation.api_calls} attestation={attestation.reason}"
+        )
     append_evidence(
         args.project,
         args.task_id,
         "resume-agent-exit",
-        code == 0,
-        f"{lane.name} resume_exit_code={code}",
+        passed,
+        detail,
         criteria=_default_exit_criterion(context),
     )
     write_checkpoint(
         args.project,
         args.task_id,
-        "agent-finished" if code == 0 else "agent-failed",
-        "Review evidence and run firstwindow verify." if code == 0 else "Inspect failure and resume again from the latest checkpoint.",
+        "agent-finished" if passed else "agent-failed",
+        "Collect independent outcome evidence, then run firstwindow verify." if passed else "Inspect failure and resume again from the latest checkpoint.",
     )
     print(f"task_id={args.task_id}\nlane={lane.name}\nresume=true")
-    return code
+    if attestation is not None:
+        print(
+            f"attestation={attestation.reason} provider={attestation.provider} "
+            f"model={attestation.model} api_calls={attestation.api_calls}"
+        )
+    return code if passed else (code or 3)
 
 
 def evidence(args: argparse.Namespace) -> int:
