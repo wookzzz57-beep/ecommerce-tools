@@ -38,7 +38,7 @@ def detect_lanes(
     agnes_route: HermesAgnesRoute | None = None,
     agnes_capabilities: AgnesCapabilities | None = None,
 ) -> list[Lane]:
-    env = env or os.environ
+    env = os.environ if env is None else env
     hermes = command_exists("hermes")
     agnes_cli = command_exists("agnes")
     capabilities = agnes_capabilities or read_agnes_capabilities()

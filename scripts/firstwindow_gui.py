@@ -35,6 +35,7 @@ def self_test() -> int:
     )
     report = build_readiness(
         agnes_free_confirmed=False,
+        agnes_key_fingerprint=None,
         agnes_route=blocked_route,
         hermes_installed=True,
         hermes_model={"provider": "agnes", "default": "cloud"},

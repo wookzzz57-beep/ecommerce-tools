@@ -1,13 +1,15 @@
 {
   "schema_version": 1,
   "project": "FirstWindow",
-  "phase": "v0.4-post-release-launch",
-  "status": "post-release",
+  "phase": "v0.4.1-release-hardening",
+  "status": "active",
   "canonical_branch": "main",
   "current_release": "v0.4.0",
-  "primary_objective": "Operate the v0.4.0 post-release launch loop from the verified Hermes-first baseline; keep product engineering frozen unless real-user evidence promotes one scoped issue.",
-  "active_engineering_issue": null,
-  "engineering_queue": [],
+  "primary_objective": "Implement issue #22 as a bounded v0.4.1 hardening patch: credential-bound readiness truth, exact Resume gating, environment isolation, and current public release/architecture copy. No new runtime or control plane.",
+  "active_engineering_issue": 22,
+  "engineering_queue": [
+    22
+  ],
   "completed_engineering_issues": [
     4,
     5,
@@ -29,17 +31,17 @@
       "id": "EXP-001",
       "issue": 17,
       "channel": "Hacker News / Show HN",
-      "status": "ready-after-v0.4-release",
+      "status": "paused-for-v0.4.1-hardening",
       "published_url": null,
       "product_baseline_frozen": true,
-      "engineering_wip": 0,
-      "next_action": "Resume EXP-001 under the v0.4.0 baseline. Before any new channel, reconcile and record any already-published Show HN item URL/time in issue #17; otherwise publish only EXP-001 and record its evidence."
+      "engineering_wip": 1,
+      "next_action": "Resume EXP-001 only after issue #22 is accepted and the v0.4.1 release decision is recorded."
     }
   },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "FirstWindow v0.4.0 is released and verified. Release tag v0.4.0 points to main 9cd9aeb8154083879f10415e276c9ec9640e5782; tag CI run 35435673019 and Windows App run 35435672993 succeeded, GitHub Release 392018165 is latest, EXE + SHA256SUMS are present, and a downloaded release EXE independently matched SHA-256 62231ba2e5a68d6f45462ab7530df6edac971f3f286f4cf64b1bee49462450b1. Issue #19 is closed. Product engineering WIP returns to zero; resume launch issue #17/EXP-001 under the v0.4.0 baseline and record real-user evidence before promoting any new engineering scope.",
-  "last_verified_main_sha": "9cd9aeb8154083879f10415e276c9ec9640e5782",
+  "resume_point": "Issue #22 remains the only engineering WIP. v0.4.1 clean-workspace local release gates pass on LAPTOP-RF3RT9HP: 109/109 tests, validate/state/compile, source self-test and bilingual UI self-test; real Hermes -> Agnes API readiness probe passed with credential-bound fingerprint and usage attestation; minimal task fw-v041-release-e2e used agnes-2.5-flash with 2 API calls, remained NOT VERIFIED until independent filesystem evidence, then VERIFIED; Windows packaged self-test/UI self-test pass; local candidate SHA-256=634a63491f2f3566b2fc13f1b85d97aa08ee5d482acdc5a13a48b9350b69fe6a. Release-surface regression tests block stale hard-coded version/candidate/Agnes Recipe copy. Next: materialize these exact changes on GitHub branch issue-22-v041-hardening, require PR CI + Windows App, then merge to main and only tag v0.4.1 after verified main.",
+  "last_verified_main_sha": "b8eefeabdc5f9340fe7fd1ed346ce0934155afbb",
   "evidence": {
     "main_linux_ci_run": 35435480264,
     "main_linux_ci": "success",
@@ -47,8 +49,8 @@
     "main_windows": "success",
     "main_windows_artifact_id": 10553463139,
     "main_windows_artifact_digest": "sha256:6ce9ecfea9b476628ee75136a23ec91d41fb65f62b7935e7fd38ae74a89ed11b",
-    "real_device": "260610pc1",
-    "real_exe_sha256": "b431ae71b7dee91435215c844cfdf694aa3fad51fdb2218cc55d446107829575",
+    "real_device": "LAPTOP-RF3RT9HP",
+    "real_exe_sha256": "62231ba2e5a68d6f45462ab7530df6edac971f3f286f4cf64b1bee49462450b1",
     "real_checksum_match": true,
     "real_packaged_self_test_exit": 0,
     "real_screenshot": "docs/assets/firstwindow-window.png",
@@ -237,6 +239,49 @@
       "verification_device": "LAPTOP-RF3RT9HP",
       "real_agnes_api_e2e": "pass",
       "independent_outcome_verification": "pass"
+    },
+    "issue_22": {
+      "status": "local-release-candidate-ready-for-pr-ci",
+      "baseline_sha": "b8eefeabdc5f9340fe7fd1ed346ce0934155afbb",
+      "branch": "issue-22-v041-hardening",
+      "scope": [
+        "credential-bound readiness",
+        "local-lane precedence",
+        "Resume live-proof gate",
+        "empty-env isolation",
+        "README/site release truth"
+      ],
+      "real_device": "LAPTOP-RF3RT9HP",
+      "local_unit_tests": "109/109 pass",
+      "local_validate": "pass",
+      "local_project_state": "pass",
+      "local_compile": "pass",
+      "local_source_self_test_exit": 0,
+      "local_source_ui_self_test_exit": 0,
+      "release_surface_regression_tests": "pass",
+      "real_agnes_readiness_probe": {
+        "credential_fingerprint_bound": true,
+        "passed": true,
+        "model": "agnes-2.5-flash",
+        "api_calls": 1,
+        "usage_attestation": "pass"
+      },
+      "real_agnes_api_e2e": {
+        "task_id": "fw-v041-release-e2e",
+        "lane": "agnes-free",
+        "model": "agnes-2.5-flash",
+        "api_calls": 2,
+        "usage_attestation": "pass",
+        "project_directory_pin": "pass",
+        "pre_independent_verify": "NOT VERIFIED",
+        "independent_outcome_check": "pass",
+        "post_independent_verify": "VERIFIED"
+      },
+      "local_packaged_self_test_exit": 0,
+      "local_packaged_ui_self_test_exit": 0,
+      "local_candidate_exe_bytes": 10596804,
+      "local_candidate_exe_sha256": "634a63491f2f3566b2fc13f1b85d97aa08ee5d482acdc5a13a48b9350b69fe6a",
+      "managed_local_real_device_e2e": "not-claimed; no ready managed-local model on LAPTOP-RF3RT9HP"
     }
   },
   "external_blockers": [],
@@ -252,15 +297,18 @@
     "repository validation passes",
     "Python compilation and full unit tests pass",
     "source self-test and bilingual UI self-test pass",
-    "fresh isolated Hermes profile is created without copied credentials or fallback providers",
+    "Agnes readiness requires the current credential and explicit free confirmation",
+    "changing/removing the Agnes credential invalidates old live-route proof",
+    "a ready Hermes Managed Local lane is not blocked by a missing Agnes key",
+    "Resume UI stays disabled without both a resumable task and exact live-route proof",
+    "empty explicit environment mappings never inherit process credentials or routing flags",
     "real Hermes -> Agnes API readiness/task execution is attested with actual API usage",
     "task outcome remains unverified until independent acceptance evidence exists",
-    "project-directory pinning prevents stale/home-directory tool execution",
     "Windows package build, packaged self-test, packaged UI self-test, and SHA-256 generation pass",
-    "release publication is tag-driven and tag version matches package version",
-    "release includes EXE plus machine-readable SHA-256 checksum",
-    "PR CI and Windows App workflow pass on the pushed release-candidate commit",
-    "PROJECT_STATE.json resume_point is truthful before handoff"
+    "public README/site pass release-surface truth regression tests",
+    "PR CI and Windows App pass on the release-candidate commit",
+    "verified main passes CI and Windows App before v0.4.1 tag publication",
+    "release includes EXE plus machine-readable SHA-256 checksum and downloaded checksum re-verifies"
   ],
   "invariants": [
     "$0 Mode never silently falls back to unknown-cost providers",

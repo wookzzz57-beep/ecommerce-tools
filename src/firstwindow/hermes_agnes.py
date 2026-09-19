@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -56,27 +57,28 @@ def scoped_env(
     profile_home: str | Path | None,
     base: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
-    env = dict(base or os.environ)
+    env = dict(os.environ if base is None else base)
     if profile_home:
         env["HERMES_HOME"] = str(profile_home)
     return env
 
 
-def agnes_api_key_present(
+def _agnes_api_key_value(
     profile_home: str | Path | None,
     env: Mapping[str, str] | None = None,
-) -> bool:
-    """Check credential presence without returning or logging the secret."""
-    source = env or os.environ
-    if str(source.get(AGNES_KEY_ENV) or "").strip():
-        return True
+) -> str | None:
+    """Return the current Agnes key internally without logging it."""
+    source = os.environ if env is None else env
+    direct = str(source.get(AGNES_KEY_ENV) or "").strip()
+    if direct:
+        return direct
     if not profile_home:
-        return False
+        return None
     path = Path(profile_home) / ".env"
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except OSError:
-        return False
+        return None
     for line in lines:
         stripped = line.strip()
         if not stripped or stripped.startswith("#") or "=" not in stripped:
@@ -85,8 +87,33 @@ def agnes_api_key_present(
         if key.strip() != AGNES_KEY_ENV:
             continue
         value = value.strip().strip("\"'")
-        return bool(value and value.upper() not in {"YOUR_API_KEY", "YOUR_API_KEY_HERE", "PLACEHOLDER"})
-    return False
+        if value and value.upper() not in {"YOUR_API_KEY", "YOUR_API_KEY_HERE", "PLACEHOLDER"}:
+            return value
+        return None
+    return None
+
+
+def agnes_api_key_present(
+    profile_home: str | Path | None,
+    env: Mapping[str, str] | None = None,
+) -> bool:
+    """Check credential presence without returning or logging the secret."""
+    return _agnes_api_key_value(profile_home, env) is not None
+
+
+def agnes_api_key_fingerprint(
+    profile_home: str | Path | None,
+    env: Mapping[str, str] | None = None,
+) -> str | None:
+    """Return a non-secret in-memory identity used to invalidate stale route proof.
+
+    The digest is never persisted or logged. It only lets the GUI notice that
+    the credential behind a previously verified Agnes route changed.
+    """
+    secret = _agnes_api_key_value(profile_home, env)
+    if secret is None:
+        return None
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
 
 def save_agnes_api_key(profile_home: str | Path, api_key: str) -> Path:

@@ -1,7 +1,9 @@
 from pathlib import Path
+import os
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from firstwindow.runners import agnes_command, hermes_command, project_env
 
@@ -27,6 +29,14 @@ class RunnerTests(unittest.TestCase):
             env = project_env(project, {"TERMINAL_CWD": r"C:\wrong", "HERMES_HOME": r"C:\profile"})
             self.assertEqual(Path(env["TERMINAL_CWD"]), project.resolve())
             self.assertEqual(env["HERMES_HOME"], r"C:\profile")
+
+    def test_project_env_empty_mapping_does_not_inherit_process_credentials(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            with patch.dict(os.environ, {"AGNES_API_KEY": "process-secret"}, clear=False):
+                env = project_env(project, {})
+            self.assertNotIn("AGNES_API_KEY", env)
+            self.assertEqual(Path(env["TERMINAL_CWD"]), project.resolve())
 
     def test_hermes_command_pins_project_directory_and_disables_cwd_restore(self):
         with tempfile.TemporaryDirectory() as tmp:

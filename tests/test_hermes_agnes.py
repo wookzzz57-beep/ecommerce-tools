@@ -1,12 +1,16 @@
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from firstwindow.hermes_agnes import (
+    AGNES_KEY_ENV,
     AGNES_MODEL,
     HermesAgnesRoute,
+    agnes_api_key_fingerprint,
     agnes_api_key_present,
     attest_hermes_usage,
     ensure_firstwindow_agnes_profile,
@@ -114,6 +118,26 @@ class HermesAgnesTests(unittest.TestCase):
             text = env_path.read_text(encoding="utf-8")
             self.assertIn("OPENAI_API_KEY=do-not-touch", text)
             self.assertIn("AGNES_API_KEY=agnes-test-key-123", text)
+
+    def test_empty_env_mapping_does_not_inherit_process_agnes_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            profile = Path(tmp)
+            with patch.dict(os.environ, {AGNES_KEY_ENV: "process-secret"}, clear=False):
+                self.assertFalse(agnes_api_key_present(profile, {}))
+                self.assertIsNone(agnes_api_key_fingerprint(profile, {}))
+                self.assertTrue(agnes_api_key_present(profile, None))
+                self.assertIsNotNone(agnes_api_key_fingerprint(profile, None))
+
+    def test_key_fingerprint_changes_without_exposing_secret(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            profile = Path(tmp)
+            save_agnes_api_key(profile, "agnes-test-key-one")
+            first = agnes_api_key_fingerprint(profile, {})
+            save_agnes_api_key(profile, "agnes-test-key-two")
+            second = agnes_api_key_fingerprint(profile, {})
+            self.assertNotEqual(first, second)
+            self.assertNotIn("agnes-test", first or "")
+            self.assertNotIn("agnes-test", second or "")
 
     def test_key_save_rejects_multiline_or_whitespace_secret(self):
         with tempfile.TemporaryDirectory() as tmp:

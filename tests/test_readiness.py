@@ -27,6 +27,7 @@ class ReadinessTests(unittest.TestCase):
     def test_missing_hermes_recommends_install(self):
         report = build_readiness(
             agnes_free_confirmed=False,
+            agnes_key_fingerprint="key-a",
             agnes_route=HermesAgnesRoute(
                 False, False, False, False, False, None, None, None, None, "hermes-not-installed"
             ),
@@ -40,6 +41,7 @@ class ReadinessTests(unittest.TestCase):
     def test_configured_agnes_profile_waits_for_free_confirmation(self):
         report = build_readiness(
             agnes_free_confirmed=False,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(),
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "agnes-2.5-flash"},
@@ -51,6 +53,7 @@ class ReadinessTests(unittest.TestCase):
     def test_confirmed_agnes_via_hermes_is_ready(self):
         report = build_readiness(
             agnes_free_confirmed=True,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(),
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "agnes-2.5-flash"},
@@ -63,6 +66,7 @@ class ReadinessTests(unittest.TestCase):
     def test_agnes_profile_with_fallback_is_not_ready(self):
         report = build_readiness(
             agnes_free_confirmed=True,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(ready=False),
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "agnes-2.5-flash"},
@@ -73,6 +77,7 @@ class ReadinessTests(unittest.TestCase):
     def test_managed_local_hermes_is_ready(self):
         report = build_readiness(
             agnes_free_confirmed=False,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(ready=False),
             hermes_installed=True,
             hermes_model={"provider": "llamacpp", "default": "local-model"},
@@ -84,6 +89,7 @@ class ReadinessTests(unittest.TestCase):
     def test_route_execution_requires_exact_live_probe_fingerprint(self):
         ready = build_readiness(
             agnes_free_confirmed=True,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(),
             hermes_installed=True,
             hermes_model={},
@@ -92,6 +98,49 @@ class ReadinessTests(unittest.TestCase):
         self.assertTrue(route_is_verified(ready, "agnes-free", "agnes-free", proof))
         self.assertFalse(route_is_verified(ready, "agnes-free", None, None))
         self.assertFalse(route_is_verified(ready, "agnes-free", "hermes-local", proof))
+
+    def test_agnes_missing_key_blocks_cloud_lane_after_free_confirmation(self):
+        report = build_readiness(
+            agnes_free_confirmed=True,
+            agnes_key_fingerprint=None,
+            agnes_route=route(),
+            hermes_installed=True,
+            hermes_model={"provider": "agnes", "default": "agnes-2.5-flash"},
+        )
+        self.assertFalse(report.zero_cost_ready)
+        self.assertFalse(report.agnes.credential_present)
+        self.assertEqual(report.action, "configure-agnes-key")
+        self.assertIsNone(route_fingerprint(report, "agnes-free"))
+
+    def test_ready_local_lane_does_not_require_agnes_key(self):
+        report = build_readiness(
+            agnes_free_confirmed=False,
+            agnes_key_fingerprint=None,
+            agnes_route=route(),
+            hermes_installed=True,
+            hermes_model={"provider": "llamacpp", "default": "local-model"},
+        )
+        self.assertTrue(report.zero_cost_ready)
+        self.assertEqual(report.ready_lane, "hermes-local")
+
+    def test_agnes_key_change_invalidates_live_probe_fingerprint(self):
+        first = build_readiness(
+            agnes_free_confirmed=True,
+            agnes_key_fingerprint="key-a",
+            agnes_route=route(),
+            hermes_installed=True,
+            hermes_model={},
+        )
+        changed = build_readiness(
+            agnes_free_confirmed=True,
+            agnes_key_fingerprint="key-b",
+            agnes_route=route(),
+            hermes_installed=True,
+            hermes_model={},
+        )
+        proof = route_fingerprint(first, "agnes-free")
+        self.assertNotEqual(proof, route_fingerprint(changed, "agnes-free"))
+        self.assertFalse(route_is_verified(changed, "agnes-free", "agnes-free", proof))
 
     def test_setup_watch_has_a_hard_stop(self):
         self.assertFalse(setup_watch_expired(199, 200))
@@ -103,18 +152,21 @@ class ReadinessTests(unittest.TestCase):
     def test_route_fingerprint_invalidates_changed_agnes_route(self):
         ready = build_readiness(
             agnes_free_confirmed=True,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(),
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "agnes-2.5-flash"},
         )
         changed = build_readiness(
             agnes_free_confirmed=True,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(model="agnes-other"),
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "agnes-other"},
         )
         blocked = build_readiness(
             agnes_free_confirmed=False,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(),
             hermes_installed=True,
             hermes_model={"provider": "agnes", "default": "agnes-2.5-flash"},
@@ -122,7 +174,7 @@ class ReadinessTests(unittest.TestCase):
         proof = route_fingerprint(ready, "agnes-free")
         self.assertEqual(
             proof,
-            ("agnes-free", "agnes", "agnes-2.5-flash", "https://apihub.agnes-ai.com/v1"),
+            ("agnes-free", "agnes", "agnes-2.5-flash", "https://apihub.agnes-ai.com/v1", "key-a"),
         )
         self.assertNotEqual(proof, route_fingerprint(changed, "agnes-free"))
         self.assertIsNone(route_fingerprint(blocked, "agnes-free"))
@@ -130,12 +182,14 @@ class ReadinessTests(unittest.TestCase):
     def test_local_fingerprint_invalidates_changed_model(self):
         local_a = build_readiness(
             agnes_free_confirmed=False,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(ready=False),
             hermes_installed=True,
             hermes_model={"provider": "llamacpp", "default": "model-a"},
         )
         local_b = build_readiness(
             agnes_free_confirmed=False,
+            agnes_key_fingerprint="key-a",
             agnes_route=route(ready=False),
             hermes_installed=True,
             hermes_model={"provider": "llamacpp", "default": "model-b"},

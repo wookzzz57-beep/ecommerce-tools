@@ -27,10 +27,11 @@ The two SHA-256 values must match.
 7. The profile is created blank. FirstWindow does **not** clone your default Hermes profile or copy its provider credentials.
 8. If `AGNES_API_KEY` is missing from the isolated profile, FirstWindow opens a masked input dialog. Paste the Agnes API key you want this profile to use.
 9. Confirm that the current Agnes API account/key route is free for your account. FirstWindow does not guess billing status.
-10. FirstWindow disables fallback providers and runs a real Agnes-through-Hermes readiness probe.
-11. The probe must return `FIRSTWINDOW_READY`, and Hermes usage evidence must show the expected Agnes model/provider and at least one API call.
-12. Only then can Start/Resume execute on that exact route.
-13. Choose a project folder, describe the task, and press **Start Building**.
+10. FirstWindow binds that confirmation to the current key for this app session. If the key is removed or changed, the old route proof is invalidated and the cloud lane must be reconfirmed/re-probed.
+11. FirstWindow disables fallback providers and runs a real Agnes-through-Hermes readiness probe.
+12. The probe must return `FIRSTWINDOW_READY`, and Hermes usage evidence must show the expected Agnes model/provider and at least one API call.
+13. Only then can Start/Resume execute on that exact route. If Hermes Managed Local is already ready, FirstWindow can verify/use it without requiring an Agnes key.
+14. Choose a project folder, describe the task, and press **Start Building**.
 
 If the Agnes cloud lane cannot be verified, FirstWindow can use **Hermes Managed Local** when a validated local model is ready. If neither verified $0 route exists, FirstWindow blocks instead of switching to a paid provider.
 

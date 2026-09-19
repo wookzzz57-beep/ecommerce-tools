@@ -20,11 +20,11 @@ Direct Agnes CLI is **not** a beginner-path dependency. It remains an explicit a
 
 ## Real Windows demo
 
-The GIF below is a real capture of the current **v0.4 Windows candidate** from PR #20, showing live **English ↔ 简体中文** switching. It is not a mockup or generated UI. The full-size screenshot below remains the released v0.3 package until v0.4 clears the remote release gates.
+The GIF below is a real capture of the **v0.4 Windows app**, showing live **English ↔ 简体中文** switching. It is not a mockup or generated UI.
 
 ![FirstWindow English and Simplified Chinese language switch demo](docs/assets/firstwindow-startup.gif)
 
-[Open the full-size released v0.3 app screenshot](docs/assets/firstwindow-window.png)
+[Open the earlier full-size v0.3 reference screenshot](docs/assets/firstwindow-window.png)
 
 ## Execution architecture
 
@@ -59,7 +59,9 @@ Choose Language → Make Me Ready → Choose Folder → Describe Task → Start 
 - creates/repairs the isolated `firstwindowzero` profile
 - disables Hermes fallback providers for the Agnes $0 route
 - requests the Agnes API key only when that isolated profile has none
-- requires the user to confirm the current Agnes account/API route is free
+- requires the user to confirm the current Agnes account/API-key route is free
+- binds that confirmation and live proof to the current credential; removing or changing the key invalidates the old proof
+- uses an already-ready Hermes Managed Local lane without forcing Agnes credential entry
 - runs a real readiness prompt and requires `FIRSTWINDOW_READY`
 - validates Hermes usage evidence against the expected Agnes model/provider
 - refuses Start/Resume unless the exact route fingerprint has passed the live probe
