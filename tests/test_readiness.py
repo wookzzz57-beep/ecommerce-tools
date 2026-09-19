@@ -64,6 +64,31 @@ class ReadinessTests(unittest.TestCase):
         self.assertIn("FIRSTWINDOW_READY", result.output)
         self.assertEqual(calls[0][1]["timeout"], 12)
 
+    def test_probe_requires_expected_marker_when_requested(self):
+        def runner(command, **kwargs):
+            return SimpleNamespace(returncode=0, stdout="agent exited cleanly\n", stderr="")
+        with tempfile.TemporaryDirectory() as tmp:
+            result = probe_command(
+                ["agent", "check"],
+                Path(tmp),
+                runner=runner,
+                expected_text="FIRSTWINDOW_READY",
+            )
+        self.assertFalse(result.passed)
+        self.assertEqual(result.reason, "expected-output-missing")
+
+    def test_probe_accepts_expected_marker(self):
+        def runner(command, **kwargs):
+            return SimpleNamespace(returncode=0, stdout="FIRSTWINDOW_READY\n", stderr="")
+        with tempfile.TemporaryDirectory() as tmp:
+            result = probe_command(
+                ["agent", "check"],
+                Path(tmp),
+                runner=runner,
+                expected_text="FIRSTWINDOW_READY",
+            )
+        self.assertTrue(result.passed)
+
     def test_probe_timeout_fails_closed(self):
         def runner(command, **kwargs):
             raise subprocess.TimeoutExpired(command, kwargs["timeout"])
