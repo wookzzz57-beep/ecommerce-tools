@@ -6,11 +6,10 @@ import os
 from pathlib import Path
 import platform
 import shutil
-import subprocess
 import sys
 import uuid
 
-from .bootstrap import install_command, setup_actions
+from .bootstrap import INSTALLER_TIMEOUT_SECONDS, install_command, run_installer_command, setup_actions
 from .demo_project import create_demo_project
 from .durable import append_evidence, create_task, verification_report, write_checkpoint
 from .resume import build_resume_prompt, discover_resumable_tasks, load_resume_context
@@ -88,7 +87,18 @@ def setup(args: argparse.Namespace) -> int:
         if not args.yes:
             print("Not executed. Re-run with --yes after reviewing the command.")
             return 2
-        return int(subprocess.run(command, check=False).returncode)
+        outcome = run_installer_command(command)
+        if outcome.timed_out:
+            print(
+                f"Installer timed out after {INSTALLER_TIMEOUT_SECONDS} seconds. "
+                "No runtime readiness is assumed.",
+                file=sys.stderr,
+            )
+            return 124
+        if outcome.error:
+            print(f"Installer failed: {outcome.error}", file=sys.stderr)
+            return 1
+        return int(outcome.exit_code if outcome.exit_code is not None else 1)
 
     actions = setup_actions(
         agnes_installed=agnes_installed,

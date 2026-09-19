@@ -12,7 +12,7 @@ import traceback
 import uuid
 import webbrowser
 
-from .bootstrap import install_command
+from .bootstrap import INSTALLER_TIMEOUT_SECONDS, install_command, run_installer_command
 from .demo_project import create_demo_project
 from .distribution import beginner_setup_action
 from .durable import append_evidence, create_task, write_checkpoint
@@ -413,24 +413,58 @@ def main(*, ui_self_test: bool = False) -> int:
 
             def worker():
                 self.events.put(("log", self._tr("setup.installing", target=target.title())))
-                try:
-                    code = subprocess.run(
-                        command,
-                        check=False,
-                        creationflags=self._creation_flags(),
-                    ).returncode
-                    if code == 0:
-                        added = refresh_runtime_paths(platform.system(), target)
-                        if added:
-                            self.events.put(("log", self._tr("setup.path_refreshed")))
-                    self.events.put(("log", self._tr("setup.installer_exit", target=target.title(), code=code)))
-                    if code == 0 and continue_setup:
-                        self.events.put(("continue_setup", ""))
-                except Exception as exc:
+                outcome = run_installer_command(
+                    command,
+                    timeout_seconds=INSTALLER_TIMEOUT_SECONDS,
+                    creationflags=self._creation_flags(),
+                )
+                if outcome.timed_out:
                     self.events.put(
-                        ("log", self._tr("setup.installer_failed", target=target.title(), error=exc))
+                        (
+                            "installer_blocked",
+                            (
+                                target,
+                                self._tr(
+                                    "setup.installer_timeout",
+                                    target=target.title(),
+                                    minutes=max(1, INSTALLER_TIMEOUT_SECONDS // 60),
+                                ),
+                            ),
+                        )
                     )
-                self.events.put(("refresh", ""))
+                    return
+                if outcome.error:
+                    self.events.put(
+                        (
+                            "installer_blocked",
+                            (
+                                target,
+                                self._tr("setup.installer_failed", target=target.title(), error=outcome.error),
+                            ),
+                        )
+                    )
+                    return
+
+                code = int(outcome.exit_code if outcome.exit_code is not None else 1)
+                if code == 0:
+                    added = refresh_runtime_paths(platform.system(), target)
+                    if added:
+                        self.events.put(("log", self._tr("setup.path_refreshed")))
+                self.events.put(("log", self._tr("setup.installer_exit", target=target.title(), code=code)))
+                if code == 0 and continue_setup:
+                    self.events.put(("continue_setup", ""))
+                elif code != 0:
+                    self.events.put(
+                        (
+                            "installer_blocked",
+                            (
+                                target,
+                                self._tr("setup.installer_nonzero", target=target.title(), code=code),
+                            ),
+                        )
+                    )
+                else:
+                    self.events.put(("refresh", ""))
 
             threading.Thread(target=worker, daemon=True).start()
 
@@ -706,6 +740,16 @@ def main(*, ui_self_test: bool = False) -> int:
                     elif kind == "continue_setup":
                         self.one_click_button.configure(state="normal")
                         self.root.after(100, self.setup_zero_path)
+                    elif kind == "installer_blocked":
+                        target, reason = payload
+                        self.one_click_button.configure(state="normal")
+                        self._append(str(reason))
+                        messagebox.showwarning(
+                            self._tr("dialog.setup"),
+                            self._tr("setup.installer_fallback", reason=reason),
+                        )
+                        self.open_beginner_setup(str(target))
+                        self.refresh()
                     elif kind == "probe_done":
                         lane_name, result = payload
                         self.setup_probe_running = False

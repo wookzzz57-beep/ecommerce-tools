@@ -1,6 +1,8 @@
+import subprocess
+from types import SimpleNamespace
 import unittest
 
-from firstwindow.bootstrap import install_command, setup_actions
+from firstwindow.bootstrap import install_command, run_installer_command, setup_actions
 from firstwindow.windows_paths import runtime_path_candidates
 
 
@@ -14,6 +16,51 @@ class BootstrapTests(unittest.TestCase):
             install_command("windows", "hermes"),
             ["powershell", "-NoProfile", "-Command", "iex (irm https://hermes-agent.nousresearch.com/install.ps1)"],
         )
+
+    def test_installer_runner_reports_success(self):
+        calls = []
+        def runner(command, **kwargs):
+            calls.append((command, kwargs))
+            return SimpleNamespace(returncode=0)
+
+        outcome = run_installer_command(
+            ["installer", "--test"],
+            timeout_seconds=12,
+            creationflags=7,
+            runner=runner,
+        )
+        self.assertEqual(outcome.exit_code, 0)
+        self.assertFalse(outcome.timed_out)
+        self.assertIsNone(outcome.error)
+        self.assertEqual(calls[0][1]["timeout"], 12)
+        self.assertEqual(calls[0][1]["creationflags"], 7)
+
+    def test_installer_runner_preserves_nonzero_exit(self):
+        def runner(command, **kwargs):
+            return SimpleNamespace(returncode=7)
+
+        outcome = run_installer_command(["installer"], runner=runner)
+        self.assertEqual(outcome.exit_code, 7)
+        self.assertFalse(outcome.timed_out)
+        self.assertIsNone(outcome.error)
+
+    def test_installer_runner_fails_closed_on_timeout(self):
+        def runner(command, **kwargs):
+            raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+        outcome = run_installer_command(["installer"], timeout_seconds=1, runner=runner)
+        self.assertIsNone(outcome.exit_code)
+        self.assertTrue(outcome.timed_out)
+        self.assertEqual(outcome.error, "timeout")
+
+    def test_installer_runner_reports_launcher_error(self):
+        def runner(command, **kwargs):
+            raise OSError("network launcher unavailable")
+
+        outcome = run_installer_command(["installer"], runner=runner)
+        self.assertIsNone(outcome.exit_code)
+        self.assertFalse(outcome.timed_out)
+        self.assertIn("network launcher unavailable", outcome.error or "")
 
     def test_setup_actions_only_include_missing_runtimes(self):
         actions = setup_actions(platform_name="windows", agnes_installed=False, hermes_installed=True)

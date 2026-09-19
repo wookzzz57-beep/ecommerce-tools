@@ -16,30 +16,26 @@ Get-Content .\SHA256SUMS.txt
 
 The two SHA-256 values must match.
 
-3. Open FirstWindow and press **Diagnose**.
-4. Press **Set Up $0 Path**.
-5. If Hermes is missing, FirstWindow opens the **official Hermes Desktop** download page. Download and run the official installer yourself.
-6. In Hermes Desktop, complete the one-time local setup:
-   - Settings → Providers → Local Models
-   - Install runtime
-   - Download a model appropriate for your machine
-   - Click **Use**
-7. Return to FirstWindow and press **Diagnose**.
+3. Open FirstWindow and choose **English** or **简体中文**. You can switch language live; FirstWindow remembers the choice.
+4. Press **Make Me Ready / 一键就绪**.
+5. FirstWindow diagnoses the machine and automates safe setup steps. If Hermes is missing, it asks once before running the fixed official installer. Installer waits are bounded; timeout or non-zero exit is treated as blocked, and FirstWindow opens the official setup page instead of reporting success.
+6. If Hermes is installed but no managed local model is ready, FirstWindow opens **Hermes Local Models**. Model choice/download stays explicit because it depends on machine resources and is a large external download.
+7. FirstWindow keeps re-checking. When a $0 lane becomes eligible, it runs a real probe that must return FIRSTWINDOW_READY. Only a successful probe is shown as verified.
 8. Choose a project folder, describe the task, and press **Start Building**.
 
 Hermes manages its own local llama.cpp runtime and model files. After a model is downloaded, that lane can run locally without an API key.
 
 ### Advanced CLI fallback
 
-The GUI keeps **Agnes CLI** and **Hermes CLI** buttons under **Advanced CLI fallback**. Those commands use the official documented installers, show the command before execution, and require explicit confirmation.
+The GUI keeps **Agnes CLI** and **Hermes CLI** buttons under **Advanced CLI fallback**. Those commands use the same fixed official documented installers, show the command before execution, require explicit confirmation, and use the same bounded wait/fail-closed behavior.
 
-They are not the default beginner path.
+The primary beginner path remains **Make Me Ready / 一键就绪**.
 
 ## Optional Agnes fast lane
 
-Use **Get Agnes Desktop** to open the official Agnes Code installation page. Sign in and configure a provider that is free for your account.
+Use **Get Agnes Desktop** to open the official Agnes Code installation page, or use the explicit **Agnes CLI** fallback. Complete Agnes sign-in and choose a route that is free for your account.
 
-Because Agnes supports both free and paid providers, FirstWindow does **not** guess. Check **I confirmed my Agnes provider is free** only after verifying that fact.
+Agnes documents free built-in/free-tier options, but it also supports paid providers. FirstWindow therefore does **not** infer cost from the Agnes executable or model name. Check **I confirmed my Agnes provider is free** only after verifying that fact for the active route.
 
 Automatic mode routes:
 
@@ -80,9 +76,9 @@ firstwindow demo
 
 ## What remains intentionally interactive
 
-- downloading/running the official Desktop installer
-- Agnes account/provider authentication
-- Hermes local-model selection/download
+- approving an installer before it runs
+- Agnes account/provider authentication and explicit free-cost confirmation
+- choosing/downloading a Hermes local model that fits the machine
 - deciding whether a provider is free for your account
 
 FirstWindow does not capture provider credentials or silently choose a large model.

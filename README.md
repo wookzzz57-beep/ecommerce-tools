@@ -29,7 +29,7 @@ Coding agents are powerful, but the first experience is fragmented:
 FirstWindow turns that into:
 
 ```text
-Download → Diagnose → Set Up $0 Path → Choose Folder → Describe Task → Start
+Download → Choose Language → Make Me Ready → Choose Folder → Describe Task → Start
 ```
 
 ## Why two runtimes?
@@ -54,10 +54,13 @@ GitHub Actions builds a single-file `FirstWindow-Windows-x64.exe`.
 
 Open it and you get:
 
-- **Diagnose** — detect installed runtimes and whether a verified $0 lane is ready
-- **Set Up $0 Path** — opens the official Hermes Desktop flow when Hermes is missing
-- **Get Agnes Desktop / Get Hermes Desktop** — official browser-based beginner install path
-- **Advanced CLI fallback** — documented PowerShell installers remain available only by explicit choice
+- **Language: English / 简体中文** → switch live without restarting; the preference persists
+- **Diagnose** → detect installed runtimes and whether a verified $0 lane is ready
+- **Make Me Ready / 一键就绪** → automate safe deterministic setup, then run a real readiness probe
+- if Hermes is missing, the fixed official installer requires explicit confirmation; timeout/non-zero failure falls back to the official setup page instead of claiming success
+- if Hermes exists but no managed local model is ready, FirstWindow opens Hermes Local Models, keeps re-checking, and verifies the route only after the real probe succeeds
+- **Get Agnes Desktop / Get Hermes Desktop** → official browser-based manual setup paths
+- **Advanced CLI fallback** → the documented Agnes/Hermes installer commands remain available by explicit choice
 - **Create Demo** — generate a safe first project
 - **Choose Folder**
 - **Runtime: Automatic / Agnes Free / Hermes Local**
@@ -135,8 +138,9 @@ A managed `llamacpp` Local Model is treated as a local lane. FirstWindow does no
 
 - no API keys stored by FirstWindow
 - no automatic paid fallback
-- beginner setup opens official Desktop download pages instead of silently executing remote scripts
-- advanced CLI installers remain fixed to documented Agnes/Hermes commands and require explicit confirmation
+- installer execution is limited to fixed documented Agnes/Hermes commands and always requires explicit confirmation
+- installer waits are bounded; timeout/non-zero failure is treated as blocked and falls back to the official setup page
+- no installer exit or executable presence is treated as inference readiness
 - unsafe task IDs/path traversal are rejected
 - worker output is not acceptance evidence
 - no shutdown, restart, sleep, or power operations
