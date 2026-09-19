@@ -39,7 +39,7 @@
   },
   "control_board_issue": 8,
   "wip_limit": 1,
-  "resume_point": "v0.4.0 local release candidate gates pass on LAPTOP-RF3RT9HP: Hermes -> Agnes API is the primary verified execution path; fresh-profile integration created an isolated zero-key profile with fallback_providers=[] and no copied credentials; a real FirstWindow task used agnes-2.5-flash with usage attestation (2 API calls), stayed NOT VERIFIED until independent outcome evidence was recorded, then VERIFIED; 99/99 tests plus validate/state/compile/source self-test/UI self-test/diff-check pass; local packaged EXE self-test and packaged UI self-test pass; candidate SHA-256=f21be57ea883e2f6498c3238183949dcf8cad1d5dfa96ca591ee78f312d015b5. Next: commit/push PR #20, require green PR CI/Windows build, then merge and publish only through tag v0.4.0.",
+  "resume_point": "v0.4.0 release-candidate head 1bcac01f2f57f9b2346962d7845d7dd5fd7edded has passed the remote PR gates: GitHub CI run 35435337680=success and Windows App run 35435337739=success, including clean-checkout PyInstaller build, packaged self-test, packaged bilingual UI self-test, SHA256 generation, and artifact upload. Local acceptance remains green with 100/100 tests plus real Hermes -> Agnes API E2E and independent outcome verification. Next: merge PR #20 only after this bookkeeping commit is green, then create tag v0.4.0 from verified main and confirm the tag workflows publish EXE + SHA256SUMS without mutating v0.3.0.",
   "last_verified_main_sha": "c3dea360d2ffecb20d3426efa76e3ddee146aef8",
   "evidence": {
     "main_linux_ci_run": 35360016689,
@@ -123,7 +123,7 @@
       "issue_comment_id": 5733366528
     },
     "issue_19": {
-      "status": "local-release-candidate-ready-for-pr-ci",
+      "status": "remote-release-candidate-verified",
       "default_verification_device": "LAPTOP-RF3RT9HP",
       "machine_probe": {
         "git": "2.55.0",
@@ -145,15 +145,15 @@
       "verified_zero_cost_lane_ready": true,
       "implementation_branch": "issue-19-bilingual-one-click-e2e",
       "pr": 20,
-      "head_sha": "644cdf039d909888987c257a67dde24880d9e33d",
-      "local_unit_tests": "99/99 pass",
+      "head_sha": "1bcac01f2f57f9b2346962d7845d7dd5fd7edded",
+      "local_unit_tests": "100/100 pass",
       "local_source_ui_self_test_exit": 0,
       "local_packaged_self_test_exit": 0,
       "local_packaged_ui_self_test_exit": 0,
       "local_candidate_exe_sha256": "f21be57ea883e2f6498c3238183949dcf8cad1d5dfa96ca591ee78f312d015b5",
-      "pr_ci_run": 35429888717,
+      "pr_ci_run": 35435337680,
       "pr_ci": "success",
-      "pr_windows_run": 35429888763,
+      "pr_windows_run": 35435337739,
       "pr_windows": "success",
       "installer_wait_bounded_seconds": 600,
       "agnes_release_probe": {
@@ -207,7 +207,11 @@
         "post_independent_verify": "VERIFIED"
       },
       "cwd_compatibility_guard": "subprocess cwd + --in + --no-restore-cwd + TERMINAL_CWD; validated on Hermes 0.21.0",
-      "credential_boundary": "fresh FirstWindow profile is blank; only explicitly entered AGNES_API_KEY is stored in the isolated profile; no default-profile cloning"
+      "credential_boundary": "fresh FirstWindow profile is blank; only explicitly entered AGNES_API_KEY is stored in the isolated profile; no default-profile cloning",
+      "pr_windows_artifact_id": 10581828909,
+      "pr_windows_artifact_digest": "sha256:af05aa22b5f1fb67c78756e3f660009b4cc71beba98607447857fb29c8b9c9f4",
+      "pr_windows_artifact_bytes": 11363650,
+      "release_candidate_remote_verified": true
     }
   },
   "external_blockers": [],
