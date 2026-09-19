@@ -247,6 +247,17 @@ def main(*, ui_self_test: bool = False) -> int:
             self._append(self._tr("language.changed", language=LANGUAGE_NAMES[self.language]))
             self.refresh()
 
+        def _refresh_runtime_choices(self, state: BeginnerState) -> None:
+            labels = self._runtime_labels()
+            choices = ["auto"]
+            if state.agnes_headless_ready:
+                choices.append("agnes-free")
+            choices.append("hermes-local")
+            if self.runtime_key not in choices:
+                self.runtime_key = "auto"
+            self.runtime_combo.configure(values=[labels[key] for key in choices])
+            self.runtime_var.set(labels[self.runtime_key])
+
         def _on_runtime_change(self, _event=None) -> None:
             reverse = {label: key for key, label in self._runtime_labels().items()}
             self.runtime_key = reverse.get(self.runtime_var.get(), "auto")
@@ -294,6 +305,7 @@ def main(*, ui_self_test: bool = False) -> int:
         def refresh(self) -> None:
             self._refresh_runtime_paths()
             state, model, report = self._state()
+            self._refresh_runtime_choices(state)
             if self.verified_lane:
                 current_route = route_fingerprint(report, self.verified_lane)
                 if current_route != self.verified_route:
@@ -839,6 +851,8 @@ def main(*, ui_self_test: bool = False) -> int:
             assert app.language == "zh-CN"
             assert app.one_click_button.cget("text") == translate("zh-CN", "button.one_click_ready")
             assert app.language_label.cget("text") == translate("zh-CN", "label.language")
+            if not app.agnes_capabilities.headless_recipe_ready:
+                assert translate("zh-CN", "runtime.agnes_free") not in tuple(app.runtime_combo["values"])
             assert load_language(settings_path, system_locale="en") == "zh-CN"
             root.destroy()
 
