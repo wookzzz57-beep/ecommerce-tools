@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import unittest
 
@@ -22,6 +23,12 @@ class ReleaseSurfaceTests(unittest.TestCase):
         self.assertIn("Hermes Agent via Agnes API", app)
         self.assertNotIn("Hermes Agent ? Agnes API", app)
         self.assertNotIn("run Agnes Recipe", app)
+
+    def test_vercel_root_rewrite_works_with_clean_urls(self):
+        config = json.loads(Path("vercel.json").read_text(encoding="utf-8"))
+        self.assertTrue(config.get("cleanUrls"))
+        rewrites = {item["source"]: item["destination"] for item in config.get("rewrites", [])}
+        self.assertEqual(rewrites.get("/"), "/site/index")
 
     def test_readme_does_not_describe_released_v04_as_candidate(self):
         readme = Path("README.md").read_text(encoding="utf-8")
